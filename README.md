@@ -1,0 +1,6 @@
+Here you&rsquo;ll find some useful code for assignments in class.  For each source file, you will usually also find several other files with different filename extensions.  For example, corresponding to the `simulator.lisp` file, there are also the files `simulator.org`, `simulator.pdf`, and `simulator.md`.
+
+-   **File with the `.org` extension::** This is the [literate programming](https://en.wikipedia.org/wiki/Literate_programming) source for the file, in this case written using [Emacs](https://www.gnu.org/software/emacs/emacs.html)&rsquo; [Org Mode](http://orgmode.org).  (Usually, something like [CWEB](https://en.wikipedia.org/wiki/CWEB) is used, along with two programs, `tangle` and `weave`, that convert the literate source to the target programming language and to LaTeX, respectively; Org allows conversion to *many* output formats, combining code in different languages in one file, execution of code during processing, debugging from (e.g.) Lisp with changes &ldquo;detangled&rdquo; back to the source, and many, many other things.)
+-   **File with `.pdf` extension::** Just what you think, a PDF version created from the literate (`.org`) source via LaTeX.
+-   **File with the `.md` extension: :** A [Markdown](https://daringfireball.net/projects/markdown/) version, also produced from the `.org` file; some (like GitHub) prefer this.
+

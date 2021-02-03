@@ -1,0 +1,165 @@
+
+
+# #############################################################
+#+STARTUP: hidestars
+#+STARTUP: showall
+#+OPTIONS: toc:nil num:t H:3
+#+LATEX_CLASS: tufte-handout
+#+LATEX_CLASS_OPTIONS: [11pt]
+#+LATEX_HEADER: \usepackage{tufte-textbook}
+# Define subtitle after, since the new \subtitle macro is in the textbook.sty file:
+#+LATEX_HEADER: \subtitle{(new-symbol.lisp)}
+# +LATEX_HEADER: \makeindex
+# +LATEX_HEADER: \asPublished
+# +LATEXT_HEADER: \hideSources
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \setenumerate{itemsep=-3pt,topsep=0pt}
+#+MACRO: marginnote @@latex:\marginnote[$2]{$1}@@@@html:<span class="marginnote">$1</span>@@
+#+LATEX_HEADER: \setitemize{itemsep=-3pt,topsep=0pt}
+#+MACRO: source @@latex:\source{$1}@@
+#+MACRO: latex @@latex:\LaTeX{}@@@@html:<span class="latex">L<sup>A</sup>T<sub>E</sub>&Chi;</span>@@
+#+HTML_HEAD: <link rel="stylesheet" href="my-tufte.css"/>
+#+TITLE: Creating New Custom Symbols: new-symbol.lisp
+#+AUTHOR: Roy M. Turner
+#+DATE: Spring, 2021
+#+LATEX_CLASS_OPTIONS: [11pt]
+# Fix the margins -- following from Clark Donley (clarkdonley.com)
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+# This line makes lists work better:
+# It eliminates whitespace before/within a list and pushes it tt the left margin
+# +LATEX_HEADER: \usepackage{enumitem}
+# #############################################################
+
+* Description
+
+This file goes beyond the built-in =gensym= function for creating symbols. In particular, you can create a sequence of symbols whose name starts with whatever prefix you like, as opposed to =gensym='s limitation of ones that look like =G596=, =G597=, etc.  This is done using the =new-symbol= macro defined here. In addition, whereas =gensym= just provides a symbol without /interning/ it (i.e, putting it into the current package's symbol table), those produced will be interned automatically.
+
+You may ask: "Why would I need this?"  Primarily this is useful for creating new names for objects or other things that have some sort of meaning.  For example, if you have a class =robot= to simulate a robot, then instead of you having to come up with a name for each robot you create, you can do it this way:
+#+begin_src lisp
+(defclass robot ()
+  ((name (new-symbol 'robot))
+   ...
+   ))
+#+end_src
+The first robot will be named =ROBOT0=, the second =ROBOT1=, and so on.
+
+The =new-symbol= macro takes a single, optional argument specifying the prefix.  This can be either a symbol:
+:  (new-symbol 'robot)
+or a string:
+: (new-symbol "ROBOT")
+Note that if you specify a string and you are using Lisp's default setting, case-insensitive, then you should probably uppercase the string, otherwise you'll get something that looks like this
+: |robot0|
+which is how Lisp handles lowercase names; you won't be able to type this in easily.
+
+Without an argument, =new-symbol= returns symbols that look like =S1=, =S2=, and so forth.
+
+This file is part of the utilities I'm providing to you, but if you want to use this file by itself, just put this in  your code:
+: (load "new-symbol")
+if the file =new-symbol.lisp= is in the same directory, else replace the name with the path to where it lives.[fn:3]
+
+The code in the file is in the =NEWSYMBOL= package.  You can call =new-symbol= from the default package you are likely using (=cl-user=) as:
+: (newsymbol:new-symbol)
+or by using the package's nickname, =SYM=:
+: (sym:new-symbol)
+Alternatively, you can import the symbol into your current package by:
+: (import '(sym:new-symbol))
+after which you can just do:
+: (new-symbol)
+
+* Code
+
+First, define the package and change to that package for the rest of the file:
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(unless (find-package "SYM")
+  (defpackage "NEWSYMBOL"
+    (:use "COMMON-LISP")
+    (:nicknames "SYM")
+    (:export "NEW-SYMBOL")
+    )) 
+
+(in-package sym)
+#+end_src
+
+A variable is next that defines the default symbol prefix.  I use the convention that variable names surrounded by asterisks denote global variables, almost always defined via either =defvar=, =defparameter=, or =setq= at the top level.
+
+As an aside, these are /dynamic/ variables, i.e., they are dynamically-scoped (and are often referred to as "special variables"), rather than the usual lexically-scoped variables in Common Lisp.  Such variables are very useful in some contexts and extremely confusing in others.  While lexical variables behave like the ones you're used to in Python and other languages, a dynamic variable's value, if not local, is looked for in the /run-time stack/, not based on where it is defined in the code.  This can be handy.  For example, in some of my research code, objects can print to different locations while all using the same print methods; I do this by having different "message handler" objects that do the printing, then binding a special variable used by the print methods to the one I want for the object being created.
+
+In any case, if you want to change the default symbol prefix, change the value assigned to the variable =*default-symbol-prefix*=.  The value of another dynamic variable, =*symbol-generator*=, will be set at the end of the file to an instance of the =symbol-generator= class.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(defvar *default-symbol-prefix* 's)
+#+end_src
+
+An instance of the  =symbol-generator= class is where all the prefixes are stored, and its methods are what create new symbols.  *Note:* No matter how tempted you might be (for whatever reason), never, ever, make two instances of this class or you will get some /truly/ bizarre behavior, since the new instance will start over at 0 for the suffixes of all symbols.  If you accidentally do this, your best bet is to exit Lisp and restart it.
+
+Note that the symbol prefixes are stored in a hash table for fast access.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(defclass symbol-generator ()
+  (
+   (symbol-prefixes :initform (make-hash-table))
+   ))
+#+end_src
+
+When you create an instance of a CLOS object, e.g., with =make-instance=, Lisp calls the method =initialize-instance= to set it up correctly.  A common thing to need to do is to change the way an object is initialized.  Rather than redefine =initialize-instance=, mechanisms exist in CLOS to specify methods with the same name that are executed before, after, and/or around a method.  This is what the next method does: it is an =:after= method that runs to set the default prefix after the instance has been set up by =initialize-instance= itself.
+
+Note the way hash tables are accessed in Lisp.  To get a value from it, we use =gethash=.  To /set/ a value, on the other hand, we typically use the generic setting function,[fn:1] =setf=.  This sets the location specified by the first argument to the value of the second.  We can use =setf= like we'd use =setq=:
+: (setf a 3)
+will set the variable =A= to 3.[fn:2]
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(defmethod initialize-instance :after ((self symbol-generator) &rest l)
+  (declare (ignore l))
+  (setf (gethash *default-symbol-prefix* (slot-value self 'symbol-prefixes)) 0))
+
+(defmethod make-new-symbol ((self symbol-generator) &optional
+						    (symbol-prefix *default-symbol-prefix*))
+  (with-slots (symbol-prefixes) self
+    (when (stringp symbol-prefix)
+      (setq symbol-prefix (intern symbol-prefix))) ;convert to symbol
+    
+    (unless symbol-prefix
+      (setq symbol-prefix *default-symbol-prefix*))
+
+    (let* ((next-count (or (gethash symbol-prefix symbol-prefixes) 0))
+	   (newsym (intern (concatenate 'string (symbol-name symbol-prefix)
+					(princ-to-string next-count)))))
+      (setf (gethash symbol-prefix symbol-prefixes) (1+ next-count))
+      newsym)))
+
+#+end_src
+
+Create a variable to hold an instance of =symbol-generator= and initialize it.  I am using =defvar= rather than =defparameter= here because it isn't re-evaluated should this file be reloaded in a running Lisp; see comment above about why you /really/ don't want to create another one of these.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(defvar *symbol-generator* (make-instance 'symbol-generator))
+#+end_src
+
+Now create the =new-symbol= macro.  I could have made it a function, but since it's so short, no reason to incur the overhead of a function call.  This /does/ mean that this file needs to be loaded prior to any other source file that uses the macro, though, given how macros work.
+
+And, yes, I could have made it not evaluate its argument, so you could do:
+: (new-symbol foo)
+but I thought the difference from a normal function call might be more confusing than helpful.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(defmacro new-symbol (&optional prefix)
+  `(make-new-symbol *symbol-generator* ,prefix))
+#+end_src
+
+That's all, folks.
+
+* Footnotes
+
+
+
+[fn:2]Okay, /technically/ it's not a variable so much as a symbol, and the pedantically-correct term is that we bind the value 3 to the symbol =A=, or that we set the value cell of =A= to 3.  But let's not split hairs.  Looks like a variable, eh? 
+
+[fn:3]Both the file =new-generator.lisp= and this documentation are created from the same Emacs Org Mode file; this is an example of /literate programming/ (that's the term for it, not necessarily a commentary on the quality of my  writing!).
+
+
+#+attr_latex: :offset -1.25in
+[fn:2]Okay, /technically/ it's not a variable so much as a symbol, and the pedantically-correct term is that we bind the value 3 to the symbol =A=, or that we set the value cell of =A= to 3.  But let's not split hairs.  Looks like a variable, eh? 
+
+#+attr_latex: :offset -1.5in
+[fn:1]Actually, =setf= is a "special form", meaning that although it looks like a function, it doesn't really operate in the same way.  In particular, =setf= doesn't so much evaluate its first argument as determine what in memory it refers to.
