@@ -23,6 +23,7 @@
 #+LATEX_CLASS_OPTIONS: [11pt]
 # Fix the margins -- following from Clark Donley (clarkdonley.com)
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage[draft]{changes}
 # This line makes lists work better:
 # It eliminates whitespace before/within a list and pushes it tt the left margin
 # +LATEX_HEADER: \usepackage{enumitem}
@@ -56,6 +57,7 @@ importing symbols from, which will result in an error.  For example, with my set
 
 #+begin_center
 #+ATTR_LATEX: :width 0.7\textwidth
+#+ATTR_HTML: :width 600
 [[./Figs/package-error.png]]
 #+end_center
 
@@ -173,10 +175,18 @@ You can add your own action/method pairs to =*robot-command-map*= when you defin
 
 Suppose we have the =reflex-agent= as defined above.  To add an instance of it to the world at a random location, we can just do this (assuming =sim= contains a simulator instance):
 : (add-robot sim :type 'reflex-agent)
-@@latex:\noindent@@ This will create a new instance of =reflex-agent= for you.  You can instead specify an existing instance by:
+@@latex:\noindent@@ 
+This will create a new instance of =reflex-agent= for you.  You can instead specify an existing instance by:
 : (add-robot sim :robot my-robot)
 
-The =add-robot= method has additional parameters to allow setting the location (=:location=), orientation (=:orientation=), and name (=:name=, which defaults to a new symbol based on =robot=).
+The =add-robot= method has additional parameters that allow for the robot to be placed at a particular location, where the robot specifies, or at a random location.  If you pass the method your own robot instance via the =:robot= argument, by default, it places it in a random location.  If you want it  put a particular location that is /not/ what specified by robot instance (in its =location= instance variable), then set the =:location= parameter; e.g.:@@latex:\sidenote{Note: Changed 2/13/21 to allow easier random placement of pre-instantiated robots.}@@
+: (add-robot sim :robot my-robot :location '(3 4))
+\noindent
+will put it at =(3 4)= and the robot's instance variable will be set accordingly.  If you want the robot placed where its =location= instance variable says, then do not specify the =:location= parameter, but instead set the =:random-location= parameter to =nil=, e.g.:
+: (setq my-robot (make-instance 'reflex-agent :location '(3 4)))
+: (add-robot sim :robot my-robot :random-location nil)
+The same thing happens with orientation (i.e., there are =:orientation= and =:random-orientation= parameters).
+
 
 * Changing the world
 
@@ -529,18 +539,45 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 
 (defmethod add-robot ((self simulator) &key (robot nil) 
 					    (name (new-symbol 'robot))
-					    (location (random-empty-location self))
-					    (orientation (nth (random 4) *directions*))
+					    (random-location t)
+					    (location nil)
+					    (orientation nil)
+					    (random-orientation t)
 					    (type 'robot))
   (with-slots (world) self
-    (unless (empty? world location)
+    (when (and location (not (empty? world location)))
       (error "Can't add a robot to ~s: square is not empty." location))
-    (unless robot
-      (setq robot 
-	(make-instance type :name name 
-		       :location location :orientation orientation)))
+    (cond
+     ((null robot)
+      (setq robot (make-instance type
+		    :location (or location 
+				  (random-empty-location self))
+		    :orientation (or orientation 
+				     (nth (random 4) *directions*)))))
+     (t
+      (if (and (null location) random-location)
+	(setf (slot-value robot 'location) 
+	  (random-empty-location self)))
+      (if (and (null orientation) random-orientation)
+	(setf (slot-value robot 'orientation)
+	  (nth (random 4) *directions*)))))
     (add-object world robot)
     robot))
+
+					; (defmethod add-robot ((self simulator) &key (robot nil) 
+					; 					    (name (new-symbol 'robot))
+					; 					    (location (random-empty-location self))
+					; 					    (orientation (nth (random 4) *directions*))
+					; 					    (type 'robot))
+					;   (with-slots (world) self
+					;     (unless (empty? world location)
+					;       (error "Can't add a robot to ~s: square is not empty." location))
+					;     (unless robot
+					;       (setq robot 
+					; 	(make-instance type :name name 
+					; 		       :location location :orientation orientation)))
+					;     (add-object world robot)
+					;     robot))
 
 (export 'add-robot)
 
@@ -629,7 +666,7 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 (export 'remove-object)
 
 (defmethod world-sketch ((self simulator) &key (empty-char #\.) (side-wall-char #\+)
-						(top-bottom-char #\+))
+					       (top-bottom-char #\+))
 
   (with-slots (world) self
     (with-slots (size) world

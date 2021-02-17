@@ -149,7 +149,8 @@
       (setq robot (make-instance type
 		    :location (or location 
 				  (random-empty-location self))
-		    :orientation (nth (random 4) *directions*))))
+		    :orientation (or orientation 
+				     (nth (random 4) *directions*)))))
      (t
       (if (and (null location) random-location)
 	(setf (slot-value robot 'location) 
@@ -160,20 +161,20 @@
     (add-object world robot)
     robot))
 
-; (defmethod add-robot ((self simulator) &key (robot nil) 
-; 					    (name (new-symbol 'robot))
-; 					    (location (random-empty-location self))
-; 					    (orientation (nth (random 4) *directions*))
-; 					    (type 'robot))
-;   (with-slots (world) self
-;     (unless (empty? world location)
-;       (error "Can't add a robot to ~s: square is not empty." location))
-;     (unless robot
-;       (setq robot 
-; 	(make-instance type :name name 
-; 		       :location location :orientation orientation)))
-;     (add-object world robot)
-;     robot))
+					; (defmethod add-robot ((self simulator) &key (robot nil) 
+					; 					    (name (new-symbol 'robot))
+					; 					    (location (random-empty-location self))
+					; 					    (orientation (nth (random 4) *directions*))
+					; 					    (type 'robot))
+					;   (with-slots (world) self
+					;     (unless (empty? world location)
+					;       (error "Can't add a robot to ~s: square is not empty." location))
+					;     (unless robot
+					;       (setq robot 
+					; 	(make-instance type :name name 
+					; 		       :location location :orientation orientation)))
+					;     (add-object world robot)
+					;     robot))
 
 (export 'add-robot)
 
@@ -262,7 +263,7 @@
 (export 'remove-object)
 
 (defmethod world-sketch ((self simulator) &key (empty-char #\.) (side-wall-char #\+)
-						(top-bottom-char #\+))
+					       (top-bottom-char #\+))
 
   (with-slots (world) self
     (with-slots (size) world
