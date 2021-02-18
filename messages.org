@@ -348,7 +348,7 @@ This method prepares a string to be printed by inserting the correct number of s
   (with-slots (fmsg-inserts-line-breaks) self
     (if (not fmsg-inserts-line-breaks)
       string
-      (string-append "~&" string "~&"))))
+      (string-append string "~&"))))
 #+end_src
 
 This method handles unformatted messages.
