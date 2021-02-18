@@ -187,7 +187,7 @@
   (with-slots (fmsg-inserts-line-breaks) self
     (if (not fmsg-inserts-line-breaks)
       string
-      (string-append "~&" string "~&"))))
+      (string-append string "~&"))))
 ; Code:7 ends here
 
 ; [[file:messages.org::*Code][Code:8]]
