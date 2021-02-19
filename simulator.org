@@ -135,9 +135,9 @@ Association lists like this are very common in Lisp, especially when you want to
 @@latex:\noindent@@ A common idiom, since we just want the value, not the key/value pair, is:
 : (cadr (assoc :forward-sensor percept))
 @@latex:\noindent@@ or
-: (first (assoc :forward-sensor percept))
+: (second (assoc :forward-sensor percept))
 @@latex:\noindent@@ You can set a value in an association list using =setf=, e.g.,
-: (setf (assoc :forward-sensor percept) nili)
+: (setf (assoc :forward-sensor percept) nil)
 @@latex:\noindent@@ would result in =percept= having  the value:
 : ((:forward-sensor nil)
 :  (:front-bump nil)
