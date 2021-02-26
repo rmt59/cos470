@@ -6,13 +6,19 @@
     )
 
 (in-package sim)
+; Package setup:1 ends here
 
+; [[file:simulator.org::*Package setup][Package setup:2]]
+#+:sbcl (declaim (sb-ext:muffle-conditions style-warning))
+; Package setup:2 ends here
+
+; [[file:simulator.org::*Package setup][Package setup:3]]
 (load "new-symbol")
 (use-package 'sym)
 (load "messages")
 (shadowing-import 'msg:msg)
 (use-package 'message)
-; Package setup:1 ends here
+; Package setup:3 ends here
 
 ; [[file:simulator.org::*Global variables][Global variables:1]]
 (defvar *directions* '(:north :south :east :west))
@@ -603,3 +609,7 @@
       (dfmsg "[~s: choosing ~s as next action]" name next-action)
       next-action)))
 ; Example: =random-robot=:1 ends here
+
+; [[file:simulator.org::*Example: =random-robot=][Example: =random-robot=:2]]
+#+:sbcl (declaim (sb-ext:unmuffle-conditions style-warning))
+; Example: =random-robot=:2 ends here
