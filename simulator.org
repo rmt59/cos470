@@ -121,7 +121,7 @@ For the search assignment, the robots have a very  limited repertoire of sensors
 The format of the percept is an /association list/, a list of lists, one for each sensor.  Each list is composed of the sensor name (a symbol) followed by the current value.  The sensors are named =:front-sensor=, =:front-bump=, =:right-bump=, =:left-bump=, and =:rear-bump=, each of which will have a value of  =t= or =nil= in each percept.  
 
 Here's an example percept:
-: ((:forward-sensor t)
+: ((:front-sensor t)
 :  (:front-bump nil)
 :  (:right-bump t)
 :  (:rear-bump nil)
@@ -129,25 +129,25 @@ Here's an example percept:
 @@latex:\noindent@@ This would correspond to a situation in which there is something directly in front of the robot, and the last action caused it to bump into something on its right side.[fn:2]
 
 Association lists like this are very common in Lisp, especially when you want to have key/value pairs, but don't want a hash table.  There is a special Lisp function, =assoc=, that is made for interacting with association lists; for example, if =percept= holds the percept above, then this:
-: (assoc :forward-sensor percept)
+: (assoc :front-sensor percept)
 @@latex:\noindent@@ will return:
-: (forward-sensor t)
+: (front-sensor t)
 @@latex:\noindent@@ A common idiom, since we just want the value, not the key/value pair, is:
-: (cadr (assoc :forward-sensor percept))
+: (cadr (assoc :front-sensor percept))
 @@latex:\noindent@@ or
-: (second (assoc :forward-sensor percept))
+: (second (assoc :front-sensor percept))
 @@latex:\noindent@@ You can set a value in an association list using =setf=, e.g.,
-: (setf (assoc :forward-sensor percept) nil)
+: (setf (assoc :front-sensor percept) nil)
 @@latex:\noindent@@ would result in =percept= having  the value:
-: ((:forward-sensor nil)
+: ((:front-sensor nil)
 :  (:front-bump nil)
 :  (:right-bump t)
 :  (:rear-bump nil)
 :  (:left-bump nil))
 
 You may be wondering what is going on with those colons, and why something like
-: (assoc :forward-sensor percept)
-@@latex:\noindent@@ doesn't give an unbound variable error, since =:forward-sensor= isn't quoted.  Recall that all symbols are contained in /packages/, such as =cl-user=, =sim=, etc.  There is a special package, =keyword=, that has no displayed name, and so if you see a symbol like =:forward-sensor= with a colon but no name before it, it is a keyword.  Symbols in the =keyword= package have the very useful property that they all evaluate to themselves.  So you can get something like this:
+: (assoc :front-sensor percept)
+@@latex:\noindent@@ doesn't give an unbound variable error, since =:front-sensor= isn't quoted.  Recall that all symbols are contained in /packages/, such as =cl-user=, =sim=, etc.  There is a special package, =keyword=, that has no displayed name, and so if you see a symbol like =:front-sensor= with a colon but no name before it, it is a keyword.  Symbols in the =keyword= package have the very useful property that they all evaluate to themselves.  So you can get something like this:
 : CL-USER> :this-is-a-keyword
 : :THIS-IS-A-KEYWORD
 : CL-USER>
@@ -420,6 +420,9 @@ The first of these just lists the directions the simulator/world deals with.  Th
 
 (defvar *robot-percept-map*
     '((:front-sensor forward-sensor)
+      ;; included in case someone reads the prior version of the
+      ;; documentation, where  had this instead of :front-sensor:
+      (:forward-sensor forward-sensor)
       (:front-bump front-bump-sensor)
       (:rear-bump rear-bump-sensor)
       (:right-bump right-bump-sensor)      
