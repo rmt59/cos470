@@ -2899,6 +2899,9 @@
 
 (defmethod turn-object ((self simulator) (object robot) direction)
   (with-slots (orientation name) object
+    (unless (member orientation *directions*)
+      (error "~s: Invalid orientation ~s detected; maybe you accessed 'orientation' by mistake?"
+	     name orientation))
     (setq orientation (if (eql direction :clockwise)
 			(clockwise-direction self orientation)
 			(counterclockwise-direction self orientation)))
