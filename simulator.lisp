@@ -2694,20 +2694,20 @@
     (with-slots (size) world
       (let ((w (world-array world)))
 	(write side-wall-char :escape nil)
-	(write (make-string (cadr size) :initial-element top-bottom-char) :escape nil)
+	(write (make-string (car size) :initial-element top-bottom-char) :escape nil)
 	(write side-wall-char :escape nil)
 	(fresh-line)
-	(loop for j from (1- (car size)) downto 0
+	(loop for j from (1- (cadr size)) downto 0
 	    do
 	      (write side-wall-char :escape nil)
-	      (dotimes (i (cadr size))
+	      (dotimes (i (car size))
 		(if (null (aref w i j))
 		  (write empty-char :escape nil)
 		  (write (aref w i j) :escape nil)))
 	      (write side-wall-char :escape nil)
 	      (fresh-line))
 	(write side-wall-char :escape nil)
-	(write (make-string (cadr size) :initial-element top-bottom-char) :escape nil)
+	(write (make-string (car size) :initial-element top-bottom-char) :escape nil)
 	(write side-wall-char :escape nil)
 	(fresh-line)))))
 
