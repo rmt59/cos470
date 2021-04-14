@@ -205,11 +205,31 @@
     (values t bindings))
    (t
     (let ((binding (find-binding p1 bindings)))
-      (if binding
-	  (unify (extract-value binding) p2 bindings)
-	(if (inside? p1 p2 bindings)
-	    (values nil bindings)
-	    (values t (add-binding p1 p2 bindings))))))))
+      (cond
+       ((null binding)
+	(values t (add-binding p1 p2 bindings)))
+       ((not (variable? (extract-value binding)))
+	(unify (extract-value binding) p2 bindings))
+       ;; it's a variable -- if the same var, then do nothing
+       ((eql (extract-value binding) p2)
+	(values t bindings))
+       ;; ...otherwise, add the variable<->variable binding:
+       (t
+	(values t (add-binding (extract-value binding) p2 bindings))))))))
+
+
+
+; (defun unify-variable (p1 p2 bindings)
+;   (cond
+;    ((eql p1 p2)
+;     (values t bindings))
+;    (t
+;     (let ((binding (find-binding p1 bindings)))
+;       (if binding
+; 	  (unify (extract-value binding) p2 bindings)
+; 	(if (inside? p1 p2 bindings)
+; 	    (values nil bindings)
+; 	    (values t (add-binding p1 p2 bindings))))))))
 
 ;;;[
 ;;;
