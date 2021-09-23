@@ -551,6 +551,9 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 
 (export 'add-random-obstacle)
 
+(defun random-orientation ()
+  (nth (random 4) *directions*))
+
 (defmethod add-robot ((self simulator) &key (robot nil) 
 					    (name (new-symbol 'robot))
 					    (random-location t)
@@ -559,39 +562,56 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 					    (random-orientation t)
 					    (type 'robot))
   (with-slots (world) self
-    (when (and location (not (empty? world location)))
+    ;; if a location is specified, either explicitly or in a robot instance,
+    ;; and random location hasn't been requested, then throw an error if the
+    ;; location is already occupied or out of bounds:
+    (setq location (or (and random-location (random-empty-location self))
+		       location
+		       (and robot (location robot))
+		       (random-empty-location self)))
+    (when (not (empty? world location))
       (error "Can't add a robot to ~s: square is not empty." location))
-    (cond
-     ((null robot)
+    (cond 
+     ((null robot)			;then create one to add
       (setq robot (make-instance type
-		    :location (or location 
-				  (random-empty-location self))
-		    :orientation (or orientation 
-				     (nth (random 4) *directions*)))))
+		    :location (or location (random-empty-location self))
+		    :orientation (or orientation (random-orientation)))))
      (t
-      (if (and (null location) random-location)
-	(setf (slot-value robot 'location) 
-	  (random-empty-location self)))
-      (if (and (null orientation) random-orientation)
-	(setf (slot-value robot 'orientation)
-	  (nth (random 4) *directions*)))))
+      (setf (slot-value robot 'location) location)
+      (setf (slot-value robot 'orientation) 
+	(or (and random-orientation (random-orientation))
+	    orientation
+	    (slot-value robot 'orientation)))))
     (add-object world robot)
     robot))
 
-					; (defmethod add-robot ((self simulator) &key (robot nil) 
-					; 					    (name (new-symbol 'robot))
-					; 					    (location (random-empty-location self))
-					; 					    (orientation (nth (random 4) *directions*))
-					; 					    (type 'robot))
-					;   (with-slots (world) self
-					;     (unless (empty? world location)
-					;       (error "Can't add a robot to ~s: square is not empty." location))
-					;     (unless robot
-					;       (setq robot 
-					; 	(make-instance type :name name 
-					; 		       :location location :orientation orientation)))
-					;     (add-object world robot)
-					;     robot))
+; (defmethod add-robot ((self simulator) &key (robot nil) 
+; 					    (name (new-symbol 'robot))
+; 					    (random-location t)
+; 					    (location nil)
+; 					    (orientation nil)
+; 					    (random-orientation t)
+; 					    (type 'robot))
+;   (with-slots (world) self
+;     (when (and location (not (empty? world location)))
+;       (error "Can't add a robot to ~s: square is not empty." location))
+;     (cond
+;      ((null robot)
+;       (setq robot (make-instance type
+; 		    :location (or location 
+; 				  (random-empty-location self))
+; 		    :orientation (or orientation 
+; 				     (nth (random 4) *directions*)))))
+;      (t
+;       (if (and (null location) random-location)
+; 	(setf (slot-value robot 'location) 
+; 	  (random-empty-location self)))
+;       (if (and (null orientation) random-orientation)
+; 	(setf (slot-value robot 'orientation)
+; 	  (nth (random 4) *directions*)))))
+;     (add-object world robot)
+;     robot))
+
 
 (export 'add-robot)
 
