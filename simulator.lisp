@@ -1,26 +1,23 @@
-; [[file:simulator.org::*Package setup][Package setup:1]]
+;; [[file:simulator.org::*Package setup][Package setup:1]]
 (unless (find-package "SIM")
   (defpackage "SIMULATOR"
     (:use "COMMON-LISP")
+ ;   (:shadowing-import-from "COMMON-LISP" "NAME")
     (:nicknames "SIM"))
     )
 
 (in-package sim)
-; Package setup:1 ends here
 
-; [[file:simulator.org::*Package setup][Package setup:2]]
-#+:sbcl (declaim (sb-ext:muffle-conditions style-warning))
-; Package setup:2 ends here
+(shadowing-import '(NAME) :cl-user)
 
-; [[file:simulator.org::*Package setup][Package setup:3]]
 (load "new-symbol")
 (use-package 'sym)
 (load "messages")
 (shadowing-import 'msg:msg)
 (use-package 'message)
-; Package setup:3 ends here
+;; Package setup:1 ends here
 
-; [[file:simulator.org::*Global variables][Global variables:1]]
+;; [[file:simulator.org::*Global variables][Global variables:1]]
 (defvar *directions* '(:north :south :east :west))
 
 (defvar *robot-command-map*
@@ -34,18 +31,15 @@
 
 (defvar *robot-percept-map*
     '((:front-sensor forward-sensor)
-      ;; included in case someone reads the prior version of the
-      ;; documentation, where  had this instead of :front-sensor:
-      (:forward-sensor forward-sensor)
       (:front-bump front-bump-sensor)
       (:rear-bump rear-bump-sensor)
       (:right-bump right-bump-sensor)      
       (:left-bump left-bump-sensor)))
 
 (export '(*robot-command-map* *robot-percept-map* *directions*))
-; Global variables:1 ends here
+;; Global variables:1 ends here
 
-; [[file:simulator.org::*Classes][Classes:1]]
+;; [[file:simulator.org::*Classes][Classes:1]]
 (defclass simulator ()
   (
    (world :initarg :world :initform nil)
@@ -89,9 +83,9 @@
   )
 
 (export 'robot)
-; Classes:1 ends here
+;; Classes:1 ends here
 
-; [[file:simulator.org::*Simulator methods][Simulator methods:1]]
+;; [[file:simulator.org::*Simulator methods][Simulator methods:1]]
 (defmethod clear ((self simulator))
   (with-slots (world) self
     (clear world)))
@@ -111,9 +105,9 @@
     (add-obstacle self loc)))
 
 (export 'add-obstacles)
-; Simulator methods:1 ends here
+;; Simulator methods:1 ends here
 
-; [[file:simulator.org::*Simulator methods][Simulator methods:2]]
+;; [[file:simulator.org::*Simulator methods][Simulator methods:2]]
 (defmethod add-obstacle ((self simulator) (object object))
   (with-slots (world) self
     (add-object world object)))
@@ -143,67 +137,20 @@
 
 (export 'add-random-obstacle)
 
-(defun random-orientation ()
-  (nth (random 4) *directions*))
-
 (defmethod add-robot ((self simulator) &key (robot nil) 
 					    (name (new-symbol 'robot))
-					    (random-location t)
-					    (location nil)
-					    (orientation nil)
-					    (random-orientation t)
+					    (location (random-empty-location self))
+					    (orientation (nth (random 4) *directions*))
 					    (type 'robot))
   (with-slots (world) self
-    ;; if a location is specified, either explicitly or in a robot instance,
-    ;; and random location hasn't been requested, then throw an error if the
-    ;; location is already occupied or out of bounds:
-    (setq location (or (and random-location (random-empty-location self))
-		       location
-		       (and robot (location robot))
-		       (random-empty-location self)))
-    (when (not (empty? world location))
+    (unless (empty? world location)
       (error "Can't add a robot to ~s: square is not empty." location))
-    (cond 
-     ((null robot)			;then create one to add
-      (setq robot (make-instance type
-		    :location (or location (random-empty-location self))
-		    :orientation (or orientation (random-orientation)))))
-     (t
-      (setf (slot-value robot 'location) location)
-      (setf (slot-value robot 'orientation) 
-	(or (and random-orientation (random-orientation))
-	    orientation
-	    (slot-value robot 'orientation)))))
+    (unless robot
+      (setq robot 
+	(make-instance type :name name 
+		       :location location :orientation orientation)))
     (add-object world robot)
     robot))
-
-; (defmethod add-robot ((self simulator) &key (robot nil) 
-; 					    (name (new-symbol 'robot))
-; 					    (random-location t)
-; 					    (location nil)
-; 					    (orientation nil)
-; 					    (random-orientation t)
-; 					    (type 'robot))
-;   (with-slots (world) self
-;     (when (and location (not (empty? world location)))
-;       (error "Can't add a robot to ~s: square is not empty." location))
-;     (cond
-;      ((null robot)
-;       (setq robot (make-instance type
-; 		    :location (or location 
-; 				  (random-empty-location self))
-; 		    :orientation (or orientation 
-; 				     (nth (random 4) *directions*)))))
-;      (t
-;       (if (and (null location) random-location)
-; 	(setf (slot-value robot 'location) 
-; 	  (random-empty-location self)))
-;       (if (and (null orientation) random-orientation)
-; 	(setf (slot-value robot 'orientation)
-; 	  (nth (random 4) *directions*)))))
-;     (add-object world robot)
-;     robot))
-
 
 (export 'add-robot)
 
@@ -292,7 +239,7 @@
 (export 'remove-object)
 
 (defmethod world-sketch ((self simulator) &key (empty-char #\.) (side-wall-char #\+)
-					       (top-bottom-char #\+))
+						(top-bottom-char #\+))
 
   (with-slots (world) self
     (with-slots (size) world
@@ -330,9 +277,9 @@
     sim))
 
 (export 'create-simulator)
-; Simulator methods:2 ends here
+;; Simulator methods:2 ends here
 
-; [[file:simulator.org::*Sensor methods][Sensor methods:1]]
+;; [[file:simulator.org::*Sensor methods][Sensor methods:1]]
 (defmethod calculate-percept ((self simulator) (object object))
   )
 
@@ -382,9 +329,9 @@
 				  (clockwise-direction self orientation))))))))))
 
 (export '(forward-sensor front-bump rear-bump left-bump right-bump bump-sensor))
-; Sensor methods:1 ends here
+;; Sensor methods:1 ends here
 
-; [[file:simulator.org::*Effector (actuator) methods][Effector (actuator) methods:1]]
+;; [[file:simulator.org::*Effector (actuator) methods][Effector (actuator) methods:1]]
 (defmethod take-action ((self simulator) (object object))
   (vdfmsg "[~s: ignoring take-action method]" (slot-value object 'name))
   )
@@ -470,9 +417,9 @@
 (export '(do-nop do-move-forward do-move-backward do-move-left
 	  do-move-right do-turn-clockwise do-turn-counterclockwise 
 	  turn-object move-object ))
-; Effector (actuator) methods:1 ends here
+;; Effector (actuator) methods:1 ends here
 
-; [[file:simulator.org::*World methods][World methods:1]]
+;; [[file:simulator.org::*World methods][World methods:1]]
 (defmethod objects ((self world))
   (with-slots (objects) self
     objects))
@@ -561,9 +508,9 @@
 	  (icon obj)))
       a)))
 (export '(objects empty? in-bounds? add-object clear object-locations size delete-object find-objectremove-object world-array))
-; World methods:1 ends here
+;; World methods:1 ends here
 
-; [[file:simulator.org::*Object methods][Object methods:1]]
+;; [[file:simulator.org::*Object methods][Object methods:1]]
 (defmethod clock-tick ((self object))
   :nop)
 
@@ -589,9 +536,9 @@
   #\@)
 
 (export 'icon)
-; Object methods:1 ends here
+;; Object methods:1 ends here
 
-; [[file:simulator.org::*Robot methods][Robot methods:1]]
+;; [[file:simulator.org::*Robot methods][Robot methods:1]]
 (defmethod clock-tick ((self robot))
   (with-slots (percept next-action name agent-program) self
     (setq next-action (agent-program self percept))
@@ -617,9 +564,9 @@
       (:east #\>)
       (:west #\<)
       (otherwise #\R))))
-; Robot methods:1 ends here
+;; Robot methods:1 ends here
 
-; [[file:simulator.org::*Example: =random-robot=][Example: =random-robot=:1]]
+;; [[file:simulator.org::*Example: =random-robot=][Example: =random-robot=:1]]
 (defclass random-robot (robot) ())
 
 (export 'random-robot)
@@ -631,8 +578,4 @@
       (dfmsg "[~s: percept = ~s]" name percept) 
       (dfmsg "[~s: choosing ~s as next action]" name next-action)
       next-action)))
-; Example: =random-robot=:1 ends here
-
-; [[file:simulator.org::*Example: =random-robot=][Example: =random-robot=:2]]
-#+:sbcl (declaim (sb-ext:unmuffle-conditions style-warning))
-; Example: =random-robot=:2 ends here
+;; Example: =random-robot=:1 ends here

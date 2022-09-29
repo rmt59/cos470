@@ -23,7 +23,6 @@
 #+LATEX_CLASS_OPTIONS: [11pt]
 # Fix the margins -- following from Clark Donley (clarkdonley.com)
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
-#+LATEX_HEADER: \usepackage[draft]{changes}
 # This line makes lists work better:
 # It eliminates whitespace before/within a list and pushes it tt the left margin
 # +LATEX_HEADER: \usepackage{enumitem}
@@ -57,7 +56,6 @@ importing symbols from, which will result in an error.  For example, with my set
 
 #+begin_center
 #+ATTR_LATEX: :width 0.7\textwidth
-#+ATTR_HTML: :width 600
 [[./Figs/package-error.png]]
 #+end_center
 
@@ -121,7 +119,7 @@ For the search assignment, the robots have a very  limited repertoire of sensors
 The format of the percept is an /association list/, a list of lists, one for each sensor.  Each list is composed of the sensor name (a symbol) followed by the current value.  The sensors are named =:front-sensor=, =:front-bump=, =:right-bump=, =:left-bump=, and =:rear-bump=, each of which will have a value of  =t= or =nil= in each percept.  
 
 Here's an example percept:
-: ((:front-sensor t)
+: ((:forward-sensor t)
 :  (:front-bump nil)
 :  (:right-bump t)
 :  (:rear-bump nil)
@@ -129,25 +127,25 @@ Here's an example percept:
 @@latex:\noindent@@ This would correspond to a situation in which there is something directly in front of the robot, and the last action caused it to bump into something on its right side.[fn:2]
 
 Association lists like this are very common in Lisp, especially when you want to have key/value pairs, but don't want a hash table.  There is a special Lisp function, =assoc=, that is made for interacting with association lists; for example, if =percept= holds the percept above, then this:
-: (assoc :front-sensor percept)
+: (assoc :forward-sensor percept)
 @@latex:\noindent@@ will return:
-: (front-sensor t)
+: (forward-sensor t)
 @@latex:\noindent@@ A common idiom, since we just want the value, not the key/value pair, is:
-: (cadr (assoc :front-sensor percept))
+: (cadr (assoc :forward-sensor percept))
 @@latex:\noindent@@ or
-: (second (assoc :front-sensor percept))
+: (first (assoc :forward-sensor percept))
 @@latex:\noindent@@ You can set a value in an association list using =setf=, e.g.,
-: (setf (assoc :front-sensor percept) nil)
+: (setf (assoc :forward-sensor percept) nili)
 @@latex:\noindent@@ would result in =percept= having  the value:
-: ((:front-sensor nil)
+: ((:forward-sensor nil)
 :  (:front-bump nil)
 :  (:right-bump t)
 :  (:rear-bump nil)
 :  (:left-bump nil))
 
 You may be wondering what is going on with those colons, and why something like
-: (assoc :front-sensor percept)
-@@latex:\noindent@@ doesn't give an unbound variable error, since =:front-sensor= isn't quoted.  Recall that all symbols are contained in /packages/, such as =cl-user=, =sim=, etc.  There is a special package, =keyword=, that has no displayed name, and so if you see a symbol like =:front-sensor= with a colon but no name before it, it is a keyword.  Symbols in the =keyword= package have the very useful property that they all evaluate to themselves.  So you can get something like this:
+: (assoc :forward-sensor percept)
+@@latex:\noindent@@ doesn't give an unbound variable error, since =:forward-sensor= isn't quoted.  Recall that all symbols are contained in /packages/, such as =cl-user=, =sim=, etc.  There is a special package, =keyword=, that has no displayed name, and so if you see a symbol like =:forward-sensor= with a colon but no name before it, it is a keyword.  Symbols in the =keyword= package have the very useful property that they all evaluate to themselves.  So you can get something like this:
 : CL-USER> :this-is-a-keyword
 : :THIS-IS-A-KEYWORD
 : CL-USER>
@@ -175,18 +173,10 @@ You can add your own action/method pairs to =*robot-command-map*= when you defin
 
 Suppose we have the =reflex-agent= as defined above.  To add an instance of it to the world at a random location, we can just do this (assuming =sim= contains a simulator instance):
 : (add-robot sim :type 'reflex-agent)
-@@latex:\noindent@@ 
-This will create a new instance of =reflex-agent= for you.  You can instead specify an existing instance by:
+@@latex:\noindent@@ This will create a new instance of =reflex-agent= for you.  You can instead specify an existing instance by:
 : (add-robot sim :robot my-robot)
 
-The =add-robot= method has additional parameters that allow for the robot to be placed at a particular location, where the robot specifies, or at a random location.  If you pass the method your own robot instance via the =:robot= argument, by default, it places it in a random location.  If you want it  put a particular location that is /not/ what specified by robot instance (in its =location= instance variable), then set the =:location= parameter; e.g.:@@latex:\sidenote{Note: Changed 2/13/21 to allow easier random placement of pre-instantiated robots.}@@
-: (add-robot sim :robot my-robot :location '(3 4))
-\noindent
-will put it at =(3 4)= and the robot's instance variable will be set accordingly.  If you want the robot placed where its =location= instance variable says, then do not specify the =:location= parameter, but instead set the =:random-location= parameter to =nil=, e.g.:
-: (setq my-robot (make-instance 'reflex-agent :location '(3 4)))
-: (add-robot sim :robot my-robot :random-location nil)
-The same thing happens with orientation (i.e., there are =:orientation= and =:random-orientation= parameters).
-
+The =add-robot= method has additional parameters to allow setting the location (=:location=), orientation (=:orientation=), and name (=:name=, which defaults to a new symbol based on =robot=).
 
 * Changing the world
 
@@ -379,22 +369,14 @@ Here is the package setup; see above for how to load the package and use it's ex
 (unless (find-package "SIM")
   (defpackage "SIMULATOR"
     (:use "COMMON-LISP")
+ ;   (:shadowing-import-from "COMMON-LISP" "NAME")
     (:nicknames "SIM"))
     )
 
 (in-package sim)
 
-#+end_src
+(shadowing-import '(NAME) :cl-user)
 
-This next line /should/ muffle all the compiler warnings that are generated by referencing a function prior to it being defined.  Most Lisps are cool with this, but SBCL, since it compiles everything, gives copious  warnings when it's done.
-
-#+begin_src lisp +n -i :tangle yes :comments link
-#+:sbcl (declaim (sb-ext:muffle-conditions style-warning))
-#+end_src
-
-Now continue with loading the supporting packages.  Note that the =shadowing-import= is needed prior to using the package =msg=, since the symbol =msg= is already in the =cl-user= package, apparently.
-
-#+begin_src lisp :tangle yes :comments link
 (load "new-symbol")
 (use-package 'sym)
 (load "messages")
@@ -420,9 +402,6 @@ The first of these just lists the directions the simulator/world deals with.  Th
 
 (defvar *robot-percept-map*
     '((:front-sensor forward-sensor)
-      ;; included in case someone reads the prior version of the
-      ;; documentation, where  had this instead of :front-sensor:
-      (:forward-sensor forward-sensor)
       (:front-bump front-bump-sensor)
       (:rear-bump rear-bump-sensor)
       (:right-bump right-bump-sensor)      
@@ -551,67 +530,20 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 
 (export 'add-random-obstacle)
 
-(defun random-orientation ()
-  (nth (random 4) *directions*))
-
 (defmethod add-robot ((self simulator) &key (robot nil) 
 					    (name (new-symbol 'robot))
-					    (random-location t)
-					    (location nil)
-					    (orientation nil)
-					    (random-orientation t)
+					    (location (random-empty-location self))
+					    (orientation (nth (random 4) *directions*))
 					    (type 'robot))
   (with-slots (world) self
-    ;; if a location is specified, either explicitly or in a robot instance,
-    ;; and random location hasn't been requested, then throw an error if the
-    ;; location is already occupied or out of bounds:
-    (setq location (or (and random-location (random-empty-location self))
-		       location
-		       (and robot (location robot))
-		       (random-empty-location self)))
-    (when (not (empty? world location))
+    (unless (empty? world location)
       (error "Can't add a robot to ~s: square is not empty." location))
-    (cond 
-     ((null robot)			;then create one to add
-      (setq robot (make-instance type
-		    :location (or location (random-empty-location self))
-		    :orientation (or orientation (random-orientation)))))
-     (t
-      (setf (slot-value robot 'location) location)
-      (setf (slot-value robot 'orientation) 
-	(or (and random-orientation (random-orientation))
-	    orientation
-	    (slot-value robot 'orientation)))))
+    (unless robot
+      (setq robot 
+	(make-instance type :name name 
+		       :location location :orientation orientation)))
     (add-object world robot)
     robot))
-
-; (defmethod add-robot ((self simulator) &key (robot nil) 
-; 					    (name (new-symbol 'robot))
-; 					    (random-location t)
-; 					    (location nil)
-; 					    (orientation nil)
-; 					    (random-orientation t)
-; 					    (type 'robot))
-;   (with-slots (world) self
-;     (when (and location (not (empty? world location)))
-;       (error "Can't add a robot to ~s: square is not empty." location))
-;     (cond
-;      ((null robot)
-;       (setq robot (make-instance type
-; 		    :location (or location 
-; 				  (random-empty-location self))
-; 		    :orientation (or orientation 
-; 				     (nth (random 4) *directions*)))))
-;      (t
-;       (if (and (null location) random-location)
-; 	(setf (slot-value robot 'location) 
-; 	  (random-empty-location self)))
-;       (if (and (null orientation) random-orientation)
-; 	(setf (slot-value robot 'orientation)
-; 	  (nth (random 4) *directions*)))))
-;     (add-object world robot)
-;     robot))
-
 
 (export 'add-robot)
 
@@ -700,7 +632,7 @@ These restrictions aren't limited to user-defined objects, either; for example, 
 (export 'remove-object)
 
 (defmethod world-sketch ((self simulator) &key (empty-char #\.) (side-wall-char #\+)
-					       (top-bottom-char #\+))
+						(top-bottom-char #\+))
 
   (with-slots (world) self
     (with-slots (size) world
@@ -1058,11 +990,6 @@ Here are the supplied =take-action= methods:
       next-action)))
 #+end_src
 
-
-Now restore warning settings:
-#+begin_src lisp +n -i :tangle yes :comments link
-#+:sbcl (declaim (sb-ext:unmuffle-conditions style-warning))
-#+end_src
 
 
 * Vars                                                               :ignore:
