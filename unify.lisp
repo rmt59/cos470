@@ -94,7 +94,7 @@
 ;;;
 ;;;]
 
-(defvar *intern-package* 'user
+(defvar *intern-package* 'cl-user
   "Package in which to intern symbols created by unify, etc., functions.")
 
 ;;;[
