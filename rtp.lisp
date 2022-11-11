@@ -55,8 +55,8 @@
 (multiple-value-bind  (contradiction blist) 
       (rtp-recur (negate theorem) axioms :bindings bindings :limit limit)
     (if contradiction
-      (fmsg "Theorem can be proven.  Bindings = ~s." blist)
-      (fmsg "Cannot prove the theorem."))
+      (fmsg "Cannot prove the theorem.")
+      (fmsg "Theorem can be proven.  Bindings = ~s." blist))
     (values (not contradiction) blist)))
 ; RTP and helper:3 ends here
 
