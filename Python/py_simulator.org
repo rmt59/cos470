@@ -17,7 +17,7 @@
 #+MACRO: source @@latex:\source{$1}@@
 #+MACRO: latex @@latex:\LaTeX{}@@@@html:<span class="latex">L<sup>A</sup>T<sub>E</sub>&Chi;</span>@@
 #+HTML_HEAD: <link rel="stylesheet" href="my-tufte.css"/>
-#+TITLE: A Simple Robot Simulator: py_simulator.py
+#+TITLE: A Simple Robot Simulator in Python
 #+AUTHOR: Roy M. Turner
 #+DATE:Fall 2022
 #+LATEX_CLASS_OPTIONS: [11pt]
