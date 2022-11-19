@@ -1,0 +1,51 @@
+# #############################################################
+#+STARTUP: hidestars
+#+STARTUP: showall
+#+OPTIONS: toc:nil num:t H:3
+#+LATEX_CLASS: tufte-handout
+#+LATEX_CLASS_OPTIONS: [11pt]
+#+LATEX_HEADER: \usepackage{tufte-textbook}
+# Define subtitle after, since the new \subtitle macro is in the textbook.sty file:
+#+LATEX_HEADER: \subtitle{(new-symbol.lisp)}
+# +LATEX_HEADER: \makeindex
+# +LATEX_HEADER: \asPublished
+# +LATEXT_HEADER: \hideSources
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \setenumerate{itemsep=-3pt,topsep=0pt}
+#+MACRO: marginnote @@latex:\marginnote[$2]{$1}@@@@html:<span class="marginnote">$1</span>@@
+#+LATEX_HEADER: \setitemize{itemsep=-3pt,topsep=0pt}
+#+MACRO: source @@latex:\source{$1}@@
+#+MACRO: latex @@latex:\LaTeX{}@@@@html:<span class="latex">L<sup>A</sup>T<sub>E</sub>&Chi;</span>@@
+#+HTML_HEAD: <link rel="stylesheet" href="my-tufte.css"/>
+#+TITLE: Creating New Custom "Symbols": new-symbol.py
+#+AUTHOR: Roy M. Turner
+#+DATE: Spring, 2021
+#+LATEX_CLASS_OPTIONS: [11pt]
+# Fix the margins -- following from Clark Donley (clarkdonley.com)
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+# This line makes lists work better:
+# It eliminates whitespace before/within a list and pushes it tt the left margin
+# +LATEX_HEADER: \usepackage{enumitem}
+# #############################################################
+
+* Description
+
+This does for Python what my =symbol.lisp= does for Lisp, sort of: it creates new "symbols" based on some old one, only here, "symbol" = "string".  <sigh>  It's Python, after all.
+
+#+begin_src python +n -i :tangle yes :comments link
+class SymbolGenerator():
+    default_prefix = 'S'
+
+    def __init__(self,prefix=None):
+        self.prefix = prefix if prefix else SymbolGenerator.default_prefix
+        self.num = 0
+
+    def new_symbol(self,prefix=None):
+        if prefix is None:
+            prefix = self.prefix
+
+        self.num += 1
+        return f'{prefix}{self.num}'
+
+#+end_src
+

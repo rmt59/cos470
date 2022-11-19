@@ -1,0 +1,1050 @@
+% Created 2022-11-19 Sat 12:05
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{tufte-handout}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{tufte-textbook}
+\subtitle{(new-symbol.lisp)}
+\usepackage{enumitem}
+\setenumerate{itemsep=-3pt,topsep=0pt}
+\setitemize{itemsep=-3pt,topsep=0pt}
+\usepackage[margin=1in]{geometry}
+\author{Roy M. Turner}
+\date{Fall 2022}
+\title{A Simple Robot Simulator: py\textsubscript{simulator.py}}
+\hypersetup{
+ pdfauthor={Roy M. Turner},
+ pdftitle={A Simple Robot Simulator: py\textsubscript{simulator.py}},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 29.0.50 (Org mode 9.4.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\titlepage
+\maketitle
+
+\section{Description}
+\label{sec:orgc68ff38}
+
+This is a very simple ``robot world''  simulator for use by COS 470/570  students for the search assignment. It allows you to define a rectangular world and add some obstacles and/or one or more robots.  It provides a base class for robots (\texttt{Robot}) that you can subclass to create your own robots.  All you have to do is create a new class based on \texttt{Robot} and define a method \texttt{agent\_program} to encode your agent's intelligence.  \texttt{agent\_program} accepts a single argument, \texttt{percept} (see below), and it returns a string naming the next action to take (see below).  You can add your gent to the simulator, then use its \texttt{run} method to run the simulation.
+
+There are also functions available give you all of the obstacle locations for when you implement (e.g.) your A\textsuperscript{*} search, as well as a very simple method to show you an overview of the current world.
+
+\section{Loading the simulator}
+\label{sec:org17ea02d}
+
+First, make sure that the file \texttt{py\_simulator.py} is in Python's current working directory.  You may also want to use things from these files, too, and if so, put them in the current working directory, too:
+\begin{itemize}
+\item \texttt{py\_symbol.py} -- a ``symbol'' (really, unique string) generator
+\item \texttt{py\_messages.py} -- a facility for writing messages to the user
+\end{itemize}
+
+You can load these in the normal Python way using \texttt{import}.  I'd suggest either something like:
+\begin{verbatim}
+import py_simulator as sim
+\end{verbatim}
+
+or
+\begin{verbatim}
+from py_simulator import *
+\end{verbatim}
+
+\noindent for all three, just to make your typing life easier.
+
+\section{Creating a simulator}
+\label{sec:org7f288c5}
+
+To create a simulator instance, do something like:
+\begin{verbatim}
+s = Simulator(size=[20,20])
+\end{verbatim}
+
+\noindent assuming that you have loaded it with ``from'' as above, else do something like:
+\begin{verbatim}
+s = sim.Simulator(size=[20,20])
+\end{verbatim}
+
+\noindent if you used the ``import\ldots{}as'' form.
+
+The default size is 10\texttimes{} 10, with no obstacles, which is what you get if you just do:
+\begin{verbatim}
+s = Simulator()
+\end{verbatim}
+
+
+You can specify obstacles in one of two ways.  First, using the \texttt{num\_obstacles} keyword parameter:
+\begin{verbatim}
+s = Simulator(num_obstacles=10)
+\end{verbatim}
+
+\noindent
+\noindent which will insert (in this case) 10 obstacles in random locations.  If you want them in particular places, you would use the second method and say exactly where you want them:
+\begin{verbatim}
+s = Simulator(obstacle_locations=[[1,1], [3,4], [10,10]])
+\end{verbatim}
+
+\noindent \textbf{Note:} The world coordinates 1-based and in \texttt{[row,column]} format, starting from the top for \texttt{row} and from the left for \texttt{column}.
+
+\section{Example}
+\label{sec:orgb531bb1}
+An example ``random'' robot is included, implemented by class \texttt{RandomRobot}.  To see it in action, do:
+\begin{verbatim}
+from py_simulator import *
+
+# Create the simulator:
+s = Simulator()
+
+# Add a robot:
+s.add_robot(robot_type='RandomRobot'))
+
+# Put in some obstacles -- could have done this when instantiating Simulator,
+# too:
+s.add_random_obstacles(number=10)
+
+# Display the world:
+s.draw()
+
+# Run for one "clock tick"...
+s.run()
+# ...and show the world again:
+s.draw()
+
+# Run for 20 ticks, showing the world each time:
+s.run(20,show_each=True)
+\end{verbatim}
+
+\section{Creating a new robot type}
+\label{sec:orgc89bbe3}
+
+To run your agent code, you'll need to create a new kind of robot and add it to the simulator.  I have provided a base class for you to use, \texttt{Robot}, whose \texttt{\_\_init\_\_} method defines instance variables for \texttt{name}, \texttt{location}, \texttt{orientation} (\(\in\) \{'north', 'south', 'east', 'west'\} -- i.e., \emph{world} directions), the most recent percept calculated (\texttt{percept}), the next action the agent is requesting (\texttt{next\_action}), the previous action taken (\texttt{prev\_action}), and the status of the last action taken (\texttt{prev\_action\_status} = True or False, for successful or not, respectively).
+
+Your agent program should not access these directly, of course, since even though they are in the agent (the \texttt{Robot} instance), they are really simulation variables, not information the agent program should have.  Most of your agents, for example, will not know anything about the world except as revealed via the percepts, and they will ``think'' in terms of forward, backward, left, right, etc., not north, south, east, or west.  Your model agent will have to keep its own model of the world in those terms, for example.  
+
+Your hill-climbing agent will need a heuristic function that does know about the world, but this should be opaque to your agent program: it should call the heuristic function with local references (``what is the square in front of me worth?'') and the heuristic function would map that into world coordinates as needed to determine the value to return.  Thus, your heuristic function is actually a kind of simulation function or interface to the simulator rather than an agent function per se, but should be defined as a method of the \texttt{Robot} (or its subclasses you're defining).
+
+For your uniform cost and A\textsuperscript{*} agent, you can directly use methods of \texttt{World} (in the simulator's \texttt{world} instance variable) to build whatever kind of map or representation, as well as heuristic functions, you choose to implement.  See the section below about the \texttt{World} class for methods that might be useful.
+
+To run your code, you will need to create another robot class based on \texttt{robot} and define its \texttt{agent\_program} method to run your code.  (In fact, you will create a different robot class for each of the parts of the assignment, most likely.)  I have provided a sample robot class, \texttt{RandomRobot} (see below) to see how to do this.  This robot just wanders around randomly.
+
+You want your agent program---i.e., your AI code---to be run automatically by the simulator at each ``clock tick''.  The simulator runs in cycles referred to here as ``clock ticks''.  Your agent will likely be fine just using the \texttt{Robot} class' \texttt{clock\_tick} function.  
+
+Your code should be implemented in your class' \texttt{agent\_program} method, which is called with a percept and which should return an action's name to be done next.
+
+For example, suppose you are writing your reflex agent.  All you need to do is something like this:
+\begin{verbatim}
+class ReflexAgent (Robot):
+    def agent_program(self,percept):
+        # your brilliant code goes here; let's say
+        # the action you choose to take has been
+        # placed in local variable "action"; then
+        # you'd do:
+        return action
+\end{verbatim}
+
+Of course, for complex agents, you wouldn't want to put all the code in \texttt{agent\_program}, since that would be rather bad style (right??), so you would break it down in a nice top-down manner, defining additional methods for \texttt{agent\_program} to call.
+
+\subsection{Percept format}
+\label{sec:org6990e36}
+
+For the search assignment, the robots have a very  limited repertoire of sensors: just a forward-looking sonar-type thing that can  sense what is directly in front of the robot and four bump sensors, one on each side and in the front and rear, that can detect whether or not the robot bumped into something due to the \emph{previous} command.  An agent's \texttt{clock\_tick} method calculates the current percept and passes it to the \texttt{agent\_program} as an argument.
+
+The percept is a Python dictionary with an entry for each sensor.  The sensors are named \texttt{front\_sensor}, \texttt{front\_bump}, \texttt{right\_bump}, \texttt{left\_bump}, and \texttt{rear\_bump}.  Each will have a value of \texttt{True} or \texttt{False}, for example:
+\begin{verbatim}
+{"front_sensor": True, "front_bump": False,
+ "right_bump"=False, "left_bump": True, "rear_bump": False"}
+\end{verbatim}
+
+\noindent which means something in front of the robot and the robot bumped into something on its left when it tried to execute the previous action.
+
+\subsection{Adding new percept components}
+\label{sec:orgd5234c7}
+\label{org97d62df}
+
+You won't need to do this for this assignment, but in case you decide to, here's how.
+You can add new percept components to robots you define based on \texttt{Robot}.  The \texttt{Robot} class has an instance variable, \texttt{percept\_map}, that contains a dictionary of the form:
+\begin{verbatim}
+{"front_sensor": "forward_sensor", ...}
+\end{verbatim}
+
+\noindent That is, each kind of sensor (e.g., \texttt{"front\_sensor"}) is linked to a method (e.g., \texttt{"forward\_sensor"}) that is called to give the value.  You can add your own key/value pairs to this as you need to; just don't forget to define the method called!
+
+The method is called by \texttt{calculate\_percept} (see the \hyperref[org14773b1]{code} below), a method of \texttt{Robot}.  It takes no arguments, sets the instance variable \texttt{percept}, and returns the percept as well.  
+
+\subsection{Adding new actions}
+\label{sec:orgc1814be}
+
+You may also want to add actions for the robot that are not provided by the standard \texttt{Robot} class.  Actions are carried out according to the \texttt{command\_map} instance variable of the robot.  A command map should be a dictionary of the form: 
+\begin{verbatim}
+{"nop": "do_nop", "forward": "do_move_forward", ...}
+\end{verbatim}
+
+\noindent where the key is the command name and the value is the name of the method to call when that command is to be carried out.  The method takes no arguments. It should return \texttt{True} if it succeeds and \texttt{False} if not.  The command methods are called by the \texttt{take\_action} method (see the code below), which takes care of setting \texttt{prev\_action} and \texttt{prev\_action\_status} (based on what the command method returns).
+
+\section{Adding your robot to the simulator}
+\label{sec:org2a74403}
+
+As shown in the example above, you can add your robot to the simulator's world using (assuming \texttt{s} contains a \texttt{Simulator} instance:
+\begin{verbatim}
+s.add_robot(type="MyRobot")
+\end{verbatim}
+
+\noindent which will create a new instance of \texttt{MyRobot} for you.  You can instead specify an existing instance by:
+\begin{verbatim}
+s.add_robot(robot=my_robot)
+\end{verbatim}
+
+\noindent where \texttt{my\_robot} contains an instance of (say) \texttt{MyRobot}.
+
+The \texttt{add\_robot} method has additional parameters to allow setting the location (\texttt{location}), orientation (\texttt{orientation}), and name (\texttt{name}, which defaults to a new symbol based on \texttt{robot}).  If a location or orientation is not set, then your robot's \texttt{location} and \texttt{orientation} instance variables are used (which means that if you let the simulator create the robot instance for you, it will appear at the default location specified in your class or in \texttt{Robot} (\texttt{[1,1]})
+
+\section{World methods}
+\label{sec:org4dd451c}
+
+There are various methods that you can use to access the world as needed, many of which have corresponding ``pass through'' methods defined in \texttt{Simulator} that just call their \texttt{World} counterpart.  Here are some useful ones (see the code for their parameters and return values, as well as whether they are methods of  \texttt{Simulator}, \texttt{World}, or both):
+\begin{itemize}
+\item \texttt{add\_object}, \texttt{add\_random\_obstacle}, \texttt{add\_random\_obstacles} -- add objects
+\item \texttt{add\_robot} -- add a robot
+\item \texttt{find\_object} -- find an object, either by location or by the object instance itself (in which case, it's just a fancy ``is this object in the world?'' method)
+\item \texttt{remove\_object} to get rid of an object, either by location or by the object instance itself
+\item \texttt{clear} -- clears the world, or the simulator and the world if you call \texttt{Simulator}'s version
+\item \texttt{draw} -- shows a view of the world
+\item \texttt{empty} -- check if a location is empty
+\item \texttt{set\_drawing\_character} -- change the characters used when drawing the world
+\item \texttt{random\_location}, \texttt{random\_empty\_location} -- return a random location (the second one ensures it's empty)
+\item \texttt{next\_location} --  given a direction and an orientation, the next location in that direction; orientation is in world coordinates, so don't use this inside your agent if it shouldn't know about that
+\item \texttt{opposite\_direction} -- given a direction, returns the opposite one
+\item \texttt{clockwise\_direction}, \texttt{counterclockwise\_direction} -- given a direction, returns the direction just to the clockwise/counterclockwise.
+\item \texttt{objects}  -- world method that returns a list of object instances
+\item \texttt{object\_locations} -- returns a list of  locations occupied objects
+\item \texttt{in\_bounds} -- given a location, returns True/False depending on if it is in-bounds or not
+\end{itemize}
+
+I can't stress enough, however, that you \textbf{must} take care to keep the information you can get from the world out of the hands of the agents that should not have access to it (looking at you, reflex agent!).
+
+\section{Exceptions}
+\label{sec:org05a5653}
+
+Some methods raise exceptions when there is a problem so you can use Python's exception-handling facilities (e.g., \texttt{try} \texttt{... =except}) to catch errors in your code.  These exceptions are:
+\begin{itemize}
+\item \texttt{WorldException} -- a problem with something having to do with the world; includes subclasses:
+\begin{itemize}
+\item \texttt{OutOfBounds} -- raised (e.g.) \texttt{add\_object} when you try to put something outside of the world boundaries
+\item \texttt{LocationOccupied}-- raised (e.g.) by \texttt{add\_object} when you try to put something where there is something already
+\end{itemize}
+\item \texttt{DirectionError} -- raised (e.g.) by \texttt{next\_location} if you give it a bad direction
+\end{itemize}
+
+\section{Using the messaging methods}
+\label{sec:org31b0f58}
+
+The file \texttt{py\_messages.py} defines a class, \texttt{MessageHandler}, and the methods \texttt{msg}, \texttt{vmsg}, \texttt{dmsg}, and \texttt{vdmsg} (yes, I know what that sounds like) to allow you to control the verbosity of messages printed by your code.  To use these, do something like:
+\begin{verbatim}
+from py_messages import *
+\end{verbatim}
+
+and then  instantiate \texttt{MessageHandler}, e.g.:
+\begin{verbatim}
+m = MessageHandler()
+\end{verbatim}
+
+
+By default, the verbosity of output is set so that only \texttt{msg} methods produce output.  You can control this by setting the verbosity of the message handler, e.g.,
+\begin{verbatim}
+m.set_verbosity(verb)
+\end{verbatim}
+
+\noindent where \texttt{verb} is one of these strings:
+\begin{itemize}
+\item \texttt{'silent'} -- turn off all messages
+\item \texttt{'normal'} -- only \texttt{msg} produces output
+\item \texttt{'verbose'}  -- in addition to \texttt{msg}, \texttt{vmsg} also produced output
+\item \texttt{'debugging'} -- in addition to the above, \texttt{dmsg} produces output
+\item \texttt{'verbose\_debugging'} -- \texttt{vdmsg} also outputs stuff at this level
+\end{itemize}
+
+As you can see in the code below, I usually define instance variables and methods of my classes to make it easier to use the message methods and to avoid dependencies on a global variable holding the \texttt{MessageHandler} instance; this also allows each object to have different verbosities, since each has their own \texttt{MessageHandler} instance.  For example:
+\begin{verbatim}
+class MyClass():
+    
+    def __init__(self):
+        self.mh = MessageHandler()
+
+    def msg(self,m):
+        self.mh.msg(m)
+    def dmsg(self,m):
+        self.mh.dmsg(m)
+    def vmsg(self,m):
+        self.mh.vmsg(m)
+    def vdmsg(self,m):
+        self.mh.vdmsg(m)
+\end{verbatim}
+
+This way, from methods of \texttt{MyClass} can do:
+\begin{verbatim}
+self.msg('hi there')
+\end{verbatim}
+
+
+Something that is very useful is (Python 3 only) string interpolation, too, e.g.:
+\begin{verbatim}
+self.msg(f'The objects are {self.objects()}.')
+\end{verbatim}
+
+
+\section{Simulating your work}
+\label{sec:org9dcadcb}
+
+The major function to use to run your simulation is just \texttt{run}.  (Original, no?)  This has two optional parameters:
+\begin{itemize}
+\item \texttt{ticks} -- how many clock-ticks to run for
+\item \texttt{show\_each} -- show the state of the world after each clock tick
+\end{itemize}
+So if you want to run it for 10 seconds (if that's what you want  clock ticks to represent, and assuming \texttt{s} contains a \texttt{Simulator} instance):
+\begin{verbatim}
+s.run(ticks=10,show_each=True)
+\end{verbatim}
+
+
+I have provided a (very) simple way to show the world, the \texttt{draw} methods of \texttt{Simulator} and \texttt{World}. These have keyword arguments that allow you to change what characters look like, or use \texttt{set\_drawing\_character} to do that.
+
+Here is an example of what the world looks like for a 10 \texttimes{} 10 world:
+\begin{verbatim}
+++++++++++++
++...<......+
++..........+
++..........+
++..........+
++..........+
++..........+
++..........+
++..........+
++..........+
++..........+
+++++++++++++
+\end{verbatim}
+
+\#+end\textsubscript{verbatim}
+\noident Not pretty, but functional.
+
+The character output for each object is obtained by this method by calling each object's \texttt{icon} method, which should return a single character.  The \texttt{Robot} version of this outputs a pointer-like symbol to indicate its orientation.  You can change this for your agents if you like.
+
+\section{Code}
+\label{sec:orgadacc17}
+\label{org14773b1}
+
+\subsection{Module setup}
+\label{sec:org0d83504}
+
+Here is the module setup; see above for how to load simulator.  Note that this documentation is being produced from an Org Mode literate programming file that contains both Python and Lisp versions of the simulator.  Feel free to ignore the Lisp code (I know you will want to!).
+
+\begin{verbatim}
+1  from py_symbol import *
+2  from py_messages import *
+3  from random import randint
+\end{verbatim}
+
+Now create a global symbol generator for all objects to use:
+\begin{verbatim}
+4  symbolGen = SymbolGenerator()
+\end{verbatim}
+
+\subsection{Object class: Simulated objects}
+\label{sec:orgd286dce}
+
+The \texttt{Object} class represents simulation objects, for example, obstacles.  Robots and other objects can be built on this class.
+
+
+\begin{verbatim}
+5  class Object():
+\end{verbatim}
+
+This initializes several instance variables based on the (optional, keyword) parameters to the instantiation function:
+
+\begin{verbatim}
+ 6      def __init__(self,name=None,location=[1,1], orientation="north",icon='@'):
+ 7          self.name = name if name else symbolGen.new_symbol("obj")
+ 8          self.location = location
+ 9          self.orientation = orientation
+10          self.icon_char = icon
+11          self.world = None
+12          self.mh = MessageHandler()
+13  
+\end{verbatim}
+
+Along with the \texttt{mh} instance variable, these methods allow using the messaging functions by just using other methods of the object, e.g., \texttt{self.msg('hi')} passes calls the corresponding method of \texttt{MessageHandle}.
+
+\begin{verbatim}
+14      def msg(self,m):
+15          self.mh.msg(m)
+16      def dmsg(self,m):
+17          self.mh.dmsg(m)
+18      def vmsg(self,m):
+19          self.mh.vmsg(m)
+20      def vdmsg(self,m):
+21          self.mh.vdmsg(m)
+\end{verbatim}
+
+Define a \texttt{clock\_tick} method that is just a placeholder for those defined for subclasses.
+
+\begin{verbatim}
+22      def clock_tick(self):
+23          pass
+\end{verbatim}
+
+This lets \texttt{World}'s \texttt{draw} method know what this object's icon should be.
+
+\begin{verbatim}
+24      def icon(self):
+25          return self.icon_char
+26  
+\end{verbatim}
+
+\subsection{World class}
+\label{sec:org88d642a}
+
+The \texttt{World} class holds a representation of the current state of the world.  Before defining those, though, we first define the exception classes used by the \texttt{World} when there are problems
+
+\begin{verbatim}
+27  class WorldException(Exception):
+28      pass
+29  class OutOfBounds(WorldException):
+30      pass
+31  class LocationOccupied(WorldException):
+32      pass
+33  
+34  class DirectionError(WorldException):
+35      pass
+36  
+\end{verbatim}
+
+
+
+Here is the class and its \texttt{\_\_init\_\_} method.  The world can be initialized with different sizes, numbers of obstacles automatically created in random locations, or obstacles placed at particular locations.  The class variables provide some default characters to use when drawing the world.  These can be overridden (see below).
+
+\begin{verbatim}
+37  class World():
+38      empty_char='.'
+39      side_wall_char='+'
+40      top_bottom_char='+'
+41  
+42      def __init__(self,size=[10,10],num_obstacles=0,
+43                   obstacle_locations=None):
+44          self.size = size
+45          self.num_obstacles = num_obstacles
+46          self.obstacle_locations = obstacle_locations
+47  
+48          self.objects = []
+49  
+50          self.mh = MessageHandler()
+\end{verbatim}
+
+Set up messaging methods.
+
+\begin{verbatim}
+51      def msg(self,m):
+52          self.mh.msg(m)
+53      def dmsg(self,m):
+54          self.mh.dmsg(m)
+55      def vmsg(self,m):
+56          self.mh.vmsg(m)
+57      def vdmsg(self,m):
+58          self.mh.vdmsg(m)
+\end{verbatim}
+
+Use this method to set the drawing character(s) for the sides, top and bottom, and/or empty spaces.
+\begin{verbatim}
+59  
+60      def set_drawing_character(self,empty=None,side_wall=None,
+61                                top_bottom=None):
+62          self.empty_char = empty if empty else World.empty_char
+63          self.side_wall_char = side_wall if side_wall \
+64              else World.side_wall_char
+65          self.top_bottom_char = top_bottom if top_bottom else \
+66              World.top_bottom_char
+67  
+\end{verbatim}
+
+Return \texttt{True} if the location passed is empty.
+
+\begin{verbatim}
+68      def empty(self,location):
+69          if not self.in_bounds(location):
+70              return False
+71          else:
+72              for object in self.objects:
+73                  if object.location == location:
+74                      return False
+75              return True
+\end{verbatim}
+
+Return \texttt{True} if the location passed is inside the world's boundaries.
+\begin{verbatim}
+76  
+77      def in_bounds(self,loc):
+78          (x,y) = loc
+79          (max_x,max_y) = self.size
+80          return False if x < 1 or y < 1 or x > max_x or y > max_y else True
+81  
+\end{verbatim}
+
+Add an object to the world.  If you specify a location (a tuple or list), then this will insert an instance of \texttt{Object} at that location.  If you pass an object (e.g., a robot, obstacle, etc.), then that will be put into the world at the location specified in its \texttt{location} instance variable.
+
+If the location is out of bounds or the location is occupied, this raises an exception.
+
+Note that this adds (or at least, sets) the added object's \texttt{world} instance variable so that other methods can access the world.  So after this is called, a method of the object can call, e.g., \texttt{self.world.next\_location([5,5],'north')} to find the location to the North of the given location.
+
+\begin{verbatim}
+82      def add_object(self,object):
+83          if type(object) == list or type(object) == tuple:
+84              object = Object(location=object)
+85  
+86          self.vdmsg(f'(adding object {object.name} to world)')
+87  
+88          object.world = self                  # so it can do its own percepts
+89  
+90          if not self.in_bounds(object.location):
+91              raise OutOfBounds()
+92          elif not self.empty(object.location):
+93              raise LocationOccupied
+94          else:
+95              self.objects.append(object)
+\end{verbatim}
+
+This clears the world of obstacles.
+
+\begin{verbatim}
+96      def clear(self):
+97          self.vdmsg('(clearing world)')
+98          self.objects = []
+99  
+\end{verbatim}
+
+This returns a list of locations at which there are objects in the world.  Note that this will return any robots' locations, too.  For a list all objects, use the \texttt{World} instances' \texttt{objects} instance variable directly.
+
+\begin{verbatim}
+100      def object_locations(self):
+101          return [obj.location for obj in self.objects]
+\end{verbatim}
+
+These two methods do the same thing: just remove an object from the world.  Which object to remove can be specified either as a location (tuple or list) or as the actual object to be removed.\footnote{Yes, I'm aware I could have just had a class variable for \texttt{delete\_object} set to \texttt{remove\_object}.  I just chose not to do it.}
+
+\begin{verbatim}
+102      def delete_object(self,object):
+103          return self.remove_object(object)
+104  
+105      def remove_object(self,object):
+106          object = self.find_object(object)
+107          if not object:
+108              self.vdmsg(f'(remove_object: object {object.name} not found)')
+109              return None
+110          else:
+111              i = self.objects.index(object)
+112              self.objects = self.objects[0:i] + self.objects[i+1:]
+113              self.vdmsg(f'(remove_object: removed {object.name})')
+114              return object
+\end{verbatim}
+
+Find an object in the world and return it.  If you give a location (tuple, list), then this will return the object at that location, if one is there.  If you give it an object instance, it will return the object if it is in the world's list of objects---in other words, this can double as an ``is this object in the world?'' method.
+
+\begin{verbatim}
+115      def find_object(self,description):
+116          if type(description) == list:
+117              return self.find_object_by_location(description)
+118          else:
+119              for obj in self.objects:
+120                  if obj is description:
+121                      return obj
+122              return None
+123  
+124      def find_object_by_location(self,loc):
+125          for obj in self.objects:
+126              if loc == obj.location:
+127                  return obj
+128          return None
+\end{verbatim}
+
+Draw a simple depiction of the world.
+
+\begin{verbatim}
+129      def draw(self):
+130          self.draw_line(self.top_bottom_char)
+131          self.draw_rows(self.empty_char,self.side_wall_char)
+132          self.draw_line(self.top_bottom_char)
+133          
+134      def draw_line(self,char):
+135          print((self.size[1]+2)*char)
+136  
+137      def draw_rows(self,empty,wall):
+138          for i in range(self.size[0]):
+139              print(wall,end='')
+140              self.draw_row(i+1,empty)
+141              print(wall)
+142  
+143      def draw_row(self,row,empty):
+144          for col in range(self.size[1]):
+145              obj = self.find_object([row,col+1])
+146              if obj:
+147                  print(obj.icon(),end='')
+148              else:
+149                  print(empty,end='')
+150  
+\end{verbatim}
+
+This returns a random empty location in the world. 
+
+The method could be improved, since it just tries to find an empty location randomly, and returns if it hasn't found one after trying once for every location in the world---so there are times it may not find one, even if one is available.  We could (should?) change this to first make a list of all empty location, then return a random element of that list, thus guaranteeing we find one.  The trade-off is time:  for sparsely-populated, large worlds, this will be much quicker.
+
+\begin{verbatim}
+151      # return empty location
+152      def empty_location(self):
+153          for i in range(self.size[0]*self.size[1]):
+154              loc = [randint(1,self.size[0]),randint(1,self.size[0])]
+155              if self.empty(loc):
+156                  return loc
+157          self.dmsg('No empty squares found after row*column tries.')
+158          return None
+159  
+\end{verbatim}
+
+These methods: find the next location in the given orientation; find the direction opposite the one given; and find the direction just to clockwise or counterclockwise of the given direction.  If you give one of them an invalid direction, they will raise an exception.
+
+\begin{verbatim}
+160      # Note: we're going w/ row,column rather than x,y now:
+161      def next_location(self,location,direction):
+162          if direction == 'north':
+163              return [location[0]-1,location[1]]
+164          elif direction == 'south':
+165              return [location[0]+1,location[1]]
+166          elif direction == 'east':
+167              return [location[0],location[1]+1]            
+168          elif direction == 'west':
+169              return [location[0],location[1]-1]
+170          else:
+171              raise DirectionError()
+172  
+173      def opposite_direction(self,direction):
+174          if direction == 'north':
+175              return 'south'
+176          elif direction == 'south':
+177              return 'north'
+178          elif direction == 'east':
+179              return 'west'
+180          elif direction == 'west':
+181              return 'east'
+182          else:
+183              raise OrientatioError()
+184  
+185      def clockwise_direction(self,direction):
+186          if direction == 'north':
+187              return 'east'
+188          elif direction == 'south':
+189              return 'west'
+190          elif direction == 'east':
+191              return 'south'
+192          elif direction == 'west':
+193              return 'north'
+194          else:
+195              raise DirectionError()
+196  
+197      def counterclockwise_direction(self,direction):
+198          return self.opposite_direction(self.clockwise_direction(direction))
+199  
+\end{verbatim}
+
+This allows you to set the location for the object by calling the corresponding method of \texttt{World}.
+
+\begin{verbatim}
+200      def set_drawing_character(self,empty=None,side_wall=None,
+201                                top_bottom=None):
+202          self.world(set_drawing_character(empty=empty,side_wall=side_wall,
+203                                           top_bottom=top_bottom))
+204  
+205  
+\end{verbatim}
+
+\subsection{Simulator class}
+\label{sec:org78ea149}
+
+This is the class that represents the simulator itself.  It creates and contain an instance of \texttt{World}.  You can set the world's size and initial  obstacle content by passing the appropriate parameters to the instantiation as well; for details, see \texttt{World}'s \texttt{\_\_init\_\_} method.
+
+\begin{verbatim}
+206  class Simulator():
+207      def __init__(self,size=[10,10],num_obstacles=0,obstacle_locations=None):
+208          self.time = 0
+209          self.world = World(size=size,num_obstacles=num_obstacles,
+210                             obstacle_locations=obstacle_locations)
+211          self.mh = MessageHandler()
+\end{verbatim}
+
+Set up messaging methods for this object.
+\begin{verbatim}
+212      def msg(self,m):
+213          self.mh.msg(m)
+214      def dmsg(self,m):
+215          self.mh.dmsg(m)
+216      def vmsg(self,m):
+217          self.mh.vmsg(m)
+218      def vdmsg(self,m):
+219          self.mh.vdmsg(m)
+220  
+\end{verbatim}
+
+Clear the world (\texttt{clear}) or clear the world  and reset the timer (\texttt{reset}).
+
+\begin{verbatim}
+221      def clear(self):
+222          self.world.clear()
+223          self.msg('Cleared.')
+224  
+225      def reset(self):
+226          self.clear()
+227          self.time = 0
+\end{verbatim}
+
+Methods for adding objects.  
+
+\texttt{add\_obstacles} just calls \texttt{add\_objects}, which calls \texttt{World}'s \texttt{add\_object} method for each object specified (see that method for details about object specification).  
+
+\texttt{add\_random\_obstacles} adds multiple obstacles in random locations.  You can specify the number to add, the maximum to add, and the minimum to add.  If you don't specify a number, this creates a random number (between the minimum and the maximum, inclusive) of obstacles.
+
+\begin{verbatim}
+228  
+229      def add_obstacles(self,loc_list):
+230          return self.add_objects(loc_list)
+231  
+232      # "loc_list" can be a list of locations or actual object instances:
+233      def add_objects(self,loc_list):
+234          for loc in loc_list:
+235              self.world.add_object(loc)
+236  
+237      def add_object(self,loc_or_obj):
+238          return self.world.add_object(loc_or_obj)
+239  
+240      def add_random_obstacles(self,number=None,max=20,min=1):
+241          if number == None:
+242              number = randint(min,max)
+243          for i in range(number):
+244              self.add_random_obstacle()
+245  
+246      def add_random_obstacle(self):
+247          self.world.add_object(self.world.empty_location())
+248  
+249      def add_robot(self,robot=None,name=None,location=None,orientation=None,
+250                    robot_type='Robot'):
+251          if location and not self.empty(location):
+252              self.msg(f"Can't add robot at {location}: not empty or out of bounds.")
+253              return False
+254          if robot is None:
+255              robot = eval(f'{robot_type}()')
+256              robot.location = location if location else self.world.empty_location()
+257              robot.orientation = location if location else directions[randint(0,3)]
+258          else:
+259              if location:
+260                  robot.location = location
+261              if orientation:
+262                  robot.orientation = orientation
+263  
+264          self.dmsg(f'Adding robot {robot.name} at {robot.location}, orientation {robot.orientation}')
+265          return self.add_object(robot)
+\end{verbatim}
+
+These are methods that just call their counterparts of \texttt{World}; see the description for those methods.
+
+\begin{verbatim}
+266      def find_object(self,description):
+267          return self.world.find_object(description)
+268  
+269      def delete_object(self,object):
+270          self.world.delete_object(object)
+271  
+272      def remove_object(self,object):
+273          self.world.delete_object(object)
+274  
+275      def random_location(self):
+276          return [randint(1,self.world.size[0]),randint(1,self.world.size[1])]
+277  
+278      def random_empty_location(self):
+279          self.world.empty_location()
+280  
+281  
+282      def draw(self,empty_char='.',side_wall_char='+',top_bottom_char='+'):
+283          self.world.draw()
+\end{verbatim}
+
+This runs the simulator.  By default, it runs for a single ``clock tick'' and does not draw the world.  You can set \texttt{ticks} to the number of ticks you would like it to run, and you can set \texttt{show\_each} to \texttt{True} to have it draw the world after each clock tick.
+
+\begin{verbatim}
+284      def run(self,ticks=1,show_each=False):
+285          self.msg(f'Running for {ticks} ticks.')
+286          for i in range(ticks):
+287              self.clock_tick()
+288              if show_each:
+289                  self.draw()
+290  
+\end{verbatim}
+
+This just calls each object's \texttt{clock\_tick} method, then increments the simulated time.
+
+\begin{verbatim}
+291      def clock_tick(self):
+292          self.dmsg('.')
+293          for object in self.world.objects:
+294              object.clock_tick()
+295          self.time += 1
+\end{verbatim}
+
+
+\subsection{Robot class}
+\label{sec:org892a3d0}
+
+This is the base class you should use for your agents.
+
+\begin{verbatim}
+296  class Robot(Object):
+\end{verbatim}
+
+The commands and percepts the \texttt{Robot} knows about are defined as class variables, which \texttt{\_\_init\_\_} then copies to corresponding instance variables if no different ones are specified when the object is instantiated.  These are described above.
+
+\begin{verbatim}
+297      command_map = {"nop": "do_nop",
+298                     "forward": "do_move_forward",
+299                     "backward": "do_move_backward", 
+300                     "left": "do_move_left", 
+301                     "right": "do_move_right", 
+302                     "turn_right": "do_turn_clockwise",
+303                     "turn_left": "do_turn_counterclockwise"}
+304  
+305      percept_map = {"front_sensor": "forward_sensor", 
+306                     "front_bump": "front_bump_sensor", 
+307                     "rear_bump": "rear_bump_sensor", 
+308                     "right_bump": "right_bump_sensor", 
+309                     "left_bump": "left_bump_sensor"}
+310  
+\end{verbatim}
+
+You can specify the location, orientation, name, and the command and percepts the robot will have here.  By default, the class variables for the commands and percepts are used, the location is [1,1], and the robot is oriented toward North.  If name is not given \texttt{'robot'} is used as the base, with the first robot being named ='robot1', etc.
+
+\begin{verbatim}
+311      def __init__(self,command_map=None,percept_map=None,
+312                   location=[1,1],orientation='north',
+313                   name=None):
+314          super().__init__(location=location, orientation=orientation)
+315          self.percept = None
+316          self.next_action = None
+317          self.prev_action = None
+318          self.prev_action_success = None
+319          
+320          self.command_map = command_map if command_map else \
+321              Robot.command_map
+322          self.percept_map = percept_map if percept_map else \
+323              Robot.percept_map
+324  
+325          self.name = name if name else symbolGen.new_symbol('robot')
+326  
+327  
+\end{verbatim}
+
+This is called by \texttt{clock\_tick} to calculate the agent's current percept; it sets the \texttt{percept} instance variable accordingly, as well as returning the percept.
+
+\begin{verbatim}
+328      def calculate_percept(self):
+329          percept = []
+330          for sensor in self.percept_map:
+331              func = self.percept_map[sensor]
+332              self.vdmsg(f'(calculate_percept({self.name}): calculating {sensor} value)')
+333              percept.append([sensor, eval(f'self.{func}()')])
+334          self.percept = percept
+335          return percept
+\end{verbatim}
+
+Set the icon used; called by \texttt{World}'s \texttt{draw} function.  The icon is meant to indicate the orientation.
+
+\begin{verbatim}
+336  
+337      def icon(self):
+338          if self.orientation == 'north':
+339              return '^'
+340          elif self.orientation == 'south':
+341              return 'v'
+342          elif self.orientation == 'east':
+343              return '>'
+344          elif self.orientation == 'west':
+345              return '<'
+346          else:
+347              return '?'
+348          
+\end{verbatim}
+
+The \texttt{clock\_tick} method calculates the percept, calls the agent program, then takes the action requested.
+
+\begin{verbatim}
+349  
+350      def clock_tick(self):
+351          self.calculate_percept()
+352          self.next_action = self.agent_program(self.percept)
+353          self.take_action()
+354          return True
+355  
+\end{verbatim}
+
+This is a placeholder \texttt{agent\_program}---by default, since \texttt{Robot} isn't meant to really do anything by itself, it just always requests no operation (\texttt{'nop'}).
+
+\begin{verbatim}
+356  
+357      def agent_program(self,percept):
+358          self.msg(f'{self.name}: Dummy agent_program({percept}) called.')
+359          return 'nop'
+360  
+\end{verbatim}
+
+Here are the default sensor methods.  The standard ones supplied provide the outputs of the forward sensor and bump sensors.
+
+\begin{verbatim}
+361      def forward_sensor(self):
+362          if self.world.empty(self.world.next_location(self.location,
+363                                                       self.orientation)):
+364              return False
+365          else:
+366              return True
+367  
+368      def front_bump_sensor(self):
+369          return self.bump_sensor('forward',self.orientation)
+370      def rear_bump_sensor(self):
+371          return self.bump_sensor('backward',self.world.opposite_direction(self.orientation))
+372      def left_bump_sensor(self):
+373          return self.bump_sensor('left', self.world.counterclockwise_direction(self.orientation))
+374      def right_bump_sensor(self):
+375          return self.bump_sensor('right', self.world.clockwise_direction(self.orientation))
+376  
+377      def bump_sensor(self,which,direction):
+378          return self.prev_action == which and \
+379              not self.prev_action_success and \
+380              not self.world.empty(self.world.next_location(self.location, direction))
+381  
+382      ## Action methods:
+383      def take_action(self):
+384          if not self.next_action in self.command_map:
+385              self.msg(f'take_action for {self.name}: unknown action {self.next_action}; ' + \
+386                  'doing nothing')
+387              self.next_action = "nop"
+388              self.prev_action_success = False
+389          else:
+390              method = self.command_map[self.next_action]
+391              self.msg(f'{self.name}: Performing action {self.next_action}')
+392              self.dmsg(f'(take_action: calling method {method})')
+393              self.prev_action_success = eval(f'self.{method}()')
+394  
+395          self.prev_action = self.next_action
+396          self.next_action = None
+397          return self.prev_action_success
+\end{verbatim}
+
+These are the methods that are called to accomplish the commands \texttt{agent\_program} requests.  See above for a description of what they do.
+
+\begin{verbatim}
+398  
+399      ## actions implementation:
+400      def do_nop(self):
+401          return True
+402  
+403      def do_move_forward(self):
+404          world = self.world
+405          return self.move(world.next_location(self.location,self.orientation))
+406  
+407      def do_move_backward(self):
+408          world = self.world
+409          return \
+410              self.move(world.next_location(self.location,
+411                                            world.opposite_direction(self.orientation)))
+412  
+413      def do_move_left(self):
+414          world = self.world
+415          return \
+416              self.move(world.next_location(self.location,
+417                                            world.counterclockwise_direction(self.orientation)))
+418  
+419      def do_move_right(self):
+420          world = self.world
+421          return \
+422              self.move(world.next_location(self.location,
+423                                            world.clockwise_direction(self.orientation)))
+424  
+425      def move(self,location):
+426          if not self.world.empty(location):
+427              self.msg(f'{self.name}: Tried and failed to move to {location}.')
+428              return False
+429          else:
+430              self.location = location
+431              self.msg(f'{self.name} Moving to {location}.')
+432              return True
+433  
+434      def do_turn_clockwise(self):
+435          self.orientation = self.world.clockwise_direction(self.orientation)
+436          self.msg(f'{self.name}: Turning right to {self.orientation}.')
+437          return True
+438  
+439      def do_turn_counterclockwise(self):
+440          self.orientation = self.world.counterclockwise_direction(self.orientation)
+441          self.msg(f'{self.name}: Turning left to {self.orientation}.')
+442          return True
+\end{verbatim}
+
+\subsection{\texttt{create\_simulator} function}
+\label{sec:org1da078e}
+
+A function is provided to create a simulator, but really, just instantiating the \texttt{Simulator} class is just as good.
+
+\begin{verbatim}
+443  def create_simulator(size=[10,10],num_obstacles=0,obstacle_locations=None):
+444      return Simulator(size=size,num_obstacles=num_obstacles,obstacle_locations=obstacle_locations)
+\end{verbatim}
+
+\subsection{Example: \texttt{RandomRobot}}
+\label{sec:org9386e2f}
+
+Here is an example to help you figure out how to set up your agents.  This one is \textbf{not} one of the ones you will create, but rather just wanders around the world.
+
+\begin{verbatim}
+445  class RandomRobot(Robot):
+446      def __init__(self,command_map=None,percept_map=None,
+447                   location=[1,1],orientation='north',
+448                   name=None):
+\end{verbatim}
+
+This calls the \texttt{Robot} class' \texttt{\_\_init\_\_} method to have it set up most of the robot for you.
+\begin{verbatim}
+449          super().__init__(command_map=command_map, percept_map=percept_map,
+450                                     location=location, orientation=orientation,
+451                                     name=symbolGen.new_symbol('randrob'))
+452  
+\end{verbatim}
+
+An example agent program.  It also shows how you can use the variable verbosity messaging code from inside methods of your robot.
+
+\begin{verbatim}
+453      def agent_program(self,percept):
+454          # Just wander around:
+455          keys = list(self.command_map.keys())
+456          self.next_action = keys[randint(0,len(keys)-1)]
+457  
+458          # here is how you can use msg, dmsg, etc.:
+459          self.dmsg(f'{self.name}: next action={self.next_action}.')
+460  
+461          return self.next_action              # must do this!!
+462  
+\end{verbatim}
+\end{document}
