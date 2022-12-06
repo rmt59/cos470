@@ -53,6 +53,9 @@ class LocationOccupied(WorldException):
 
 class DirectionError(WorldException):
     pass
+
+class OrientationError(WorldException):
+    pass
 # World class:1 ends here
 
 # [[file:py_simulator.org::*World class][World class:2]]
@@ -232,7 +235,7 @@ class World():
         elif direction == 'west':
             return 'east'
         else:
-            raise OrientatioError()
+            raise OrientationError()
 
     def clockwise_direction(self,direction):
         if direction == 'north':

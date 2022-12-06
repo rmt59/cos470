@@ -338,6 +338,8 @@ class LocationOccupied(WorldException):
 class DirectionError(WorldException):
     pass
 
+class OrientationError(WorldException):
+    pass
 #+end_src
 
 
@@ -556,7 +558,7 @@ These methods: find the next location in the given orientation; find the directi
         elif direction == 'west':
             return 'east'
         else:
-            raise OrientatioError()
+            raise OrientationError()
 
     def clockwise_direction(self,direction):
         if direction == 'north':
