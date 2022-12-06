@@ -60,6 +60,7 @@ class World():
     empty_char='.'
     side_wall_char='+'
     top_bottom_char='+'
+    directions = ['north', 'east', 'south', 'west']
 
     def __init__(self,size=[10,10],num_obstacles=0,
                  obstacle_locations=None):
@@ -315,7 +316,7 @@ class Simulator():
         if robot is None:
             robot = eval(f'{robot_type}()')
             robot.location = location if location else self.world.empty_location()
-            robot.orientation = location if location else directions[randint(0,3)]
+            robot.orientation = orientation if orientation else self.world.directions[randint(0,3)]
         else:
             if location:
                 robot.location = location
@@ -327,6 +328,12 @@ class Simulator():
 # Simulator class:4 ends here
 
 # [[file:py_simulator.org::*Simulator class][Simulator class:5]]
+    def empty(self,location):
+        return self.world.empty(location)
+
+    def empty_location(self):
+        return self.world.empty_location()
+
     def find_object(self,description):
         return self.world.find_object(description)
 
