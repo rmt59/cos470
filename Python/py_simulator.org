@@ -151,10 +151,12 @@ You may also want to add actions for the robot that are not provided by the stan
 * Adding your robot to the simulator
 
 As shown in the example above, you can add your robot to the simulator's world using (assuming =s= contains a =Simulator= instance:
-: s.add_robot(type="MyRobot")
+: s.add_robot(robot_type="MyRobot")
 @@latex:\noindent@@ which will create a new instance of =MyRobot= for you.  You can instead specify an existing instance by:
 : s.add_robot(robot=my_robot)
 \noindent where =my_robot= contains an instance of (say) =MyRobot=.
+
+(For backward compatibility with the Lisp version, you can use =type= instead of =robot_type=.)
 
 The =add_robot= method has additional parameters to allow setting the location (=location=), orientation (=orientation=), and name (=name=, which defaults to a new symbol based on =robot=).  If a location or orientation is not set, then your robot's =location= and =orientation= instance variables are used (which means that if you let the simulator create the robot instance for you, it will appear at the default location specified in your class or in =Robot= (=[1,1]=)
 
@@ -655,7 +657,10 @@ Methods for adding objects.
         self.world.add_object(self.world.empty_location())
 
     def add_robot(self,robot=None,name=None,location=None,orientation=None,
-                  robot_type='Robot'):
+                  robot_type='Robot',
+                  type=None):
+        if type is not None:
+            robot_type = type
         if location and not self.empty(location):
             self.msg(f"Can't add robot at {location}: not empty or out of bounds.")
             return False

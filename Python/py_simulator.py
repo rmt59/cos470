@@ -312,7 +312,10 @@ class Simulator():
         self.world.add_object(self.world.empty_location())
 
     def add_robot(self,robot=None,name=None,location=None,orientation=None,
-                  robot_type='Robot'):
+                  robot_type='Robot',
+                  type=None):
+        if type is not None:
+            robot_type = type
         if location and not self.empty(location):
             self.msg(f"Can't add robot at {location}: not empty or out of bounds.")
             return False
