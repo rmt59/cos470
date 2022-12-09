@@ -33,9 +33,23 @@
 
 * Description
 
-This is a very simple "robot world"  simulator for use by COS 470/570  students for the search assignment. It allows you to define a rectangular world and add some obstacles and/or one or more robots.  It provides a base class for robots (=Robot=) that you can subclass to create your own robots.  All you have to do is create a new class based on =Robot= and define a method =agent_program= to encode your agent's intelligence.  =agent_program= accepts a single argument, =percept= (see below), and it returns a string naming the next action to take (see below).  You can add your gent to the simulator, then use its =run= method to run the simulation.
+This is a very simple "robot world"  simulator for use by COS 470/570  students for the search assignment. It allows you to define a rectangular world and add some obstacles and/or one or more robots.  It provides a base class for robots (=Robot=) that you can subclass to create your own robots.  All you have to do is create a new class based on =Robot= and define a method =agent_program= to encode your agent's intelligence.  =agent_program= accepts a single argument, =percept= (see below), and it returns a string naming the next action to take (see below).  You can add your agent to the simulator, then use its =run= method to run the simulation.
 
 There are also functions available give you all of the obstacle locations for when you implement (e.g.) your A^* search, as well as a very simple method to show you an overview of the current world.
+
+* If you are coming from using the Lisp version
+
+1. /Most/ of the methods in Lisp version have corresponding versions in the Python simulator with the same arguments.  /Some/ are different, however.  You should always check here, or the code as a last resort, to make sure of the arguments' names.
+2. I do not supply a priority queue implementation for the Python version, since there are Python libraries you can use for this.
+3. The method that draws the world has been renamed to be the more sensible =draw()= instead of =world_sketch=.
+4. The orientation displayed by =World.draw()= is different than that displayed by =world_sketch= in the Lisp version.  It now corresponds to how arrays are often displayed, as =[row,column]=, with row 1 at the top and column 1 at the left.  (The simulator's world is 1-based.)   This is shown at right.
+
+@@latex:\marginpar{@@
+#+DOWNLOADED: screenshot @ 2022-12-09 13:54:07
+#+attr_org: :width 200px
+#+attr_latex: :width 1.25in
+[[file:images/If_you_are_coming_from_using_the_Lisp_version/2022-12-09_13-54-07_screenshot.png]]
+@@latex:}@@
 
 * Loading the simulator
 
@@ -76,7 +90,7 @@ from py_simulator import *
 s = Simulator()
 
 # Add a robot:
-s.add_robot(robot_type='RandomRobot'))
+s.add_robot(robot_type='RandomRobot')
 
 # Put in some obstacles -- could have done this when instantiating Simulator,
 # too:
@@ -100,9 +114,9 @@ To run your agent code, you'll need to create a new kind of robot and add it to 
 
 Your agent program should not access these directly, of course, since even though they are in the agent (the =Robot= instance), they are really simulation variables, not information the agent program should have.  Most of your agents, for example, will not know anything about the world except as revealed via the percepts, and they will "think" in terms of forward, backward, left, right, etc., not north, south, east, or west.  Your model agent will have to keep its own model of the world in those terms, for example.  
 
-Your hill-climbing agent will need a heuristic function that does know about the world, but this should be opaque to your agent program: it should call the heuristic function with local references ("what is the square in front of me worth?") and the heuristic function would map that into world coordinates as needed to determine the value to return.  Thus, your heuristic function is actually a kind of simulation function or interface to the simulator rather than an agent function per se, but should be defined as a method of the =Robot= (or its subclasses you're defining).
+Your hill-climbing agent will need a heuristic function that does know about the world, but this should be opaque to your agent program: it should call the heuristic function with local references ("what is the square in front of me worth?") and the heuristic function would map that into world coordinates as needed to determine the value to return.  Thus, your heuristic function is actually a kind of simulation method rather than an agent function per se, but should be defined as a method of the =Robot= (or its subclasses you're defining).
 
-For your uniform cost and A^* agent, you can directly use methods of =World= (in the simulator's =world= instance variable) to build whatever kind of map or representation, as well as heuristic functions, you choose to implement.  See the section below about the =World= class for methods that might be useful.
+For your uniform cost and A^* agents, you can directly use methods of =World= (in the simulator's =world= instance variable) to build whatever kind of map or representation, as well as heuristic functions, you choose to implement.  See the section below about the =World= class for methods that might be useful.
 
 To run your code, you will need to create another robot class based on =robot= and define its =agent_program= method to run your code.  (In fact, you will create a different robot class for each of the parts of the assignment, most likely.)  I have provided a sample robot class, =RandomRobot= (see below) to see how to do this.  This robot just wanders around randomly.
 
@@ -152,11 +166,11 @@ You may also want to add actions for the robot that are not provided by the stan
 
 As shown in the example above, you can add your robot to the simulator's world using (assuming =s= contains a =Simulator= instance:
 : s.add_robot(robot_type="MyRobot")
-@@latex:\noindent@@ which will create a new instance of =MyRobot= for you.  You can instead specify an existing instance by:
+@@latex:\noindent@@ which will create a new instance of =MyRobot= for you.[fn:4]  
+
+You can instead specify an existing instance by:
 : s.add_robot(robot=my_robot)
 \noindent where =my_robot= contains an instance of (say) =MyRobot=.
-
-(For backward compatibility with the Lisp version, you can use =type= instead of =robot_type=.)
 
 The =add_robot= method has additional parameters to allow setting the location (=location=), orientation (=orientation=), and name (=name=, which defaults to a new symbol based on =robot=).  If a location or orientation is not set, then your robot's =location= and =orientation= instance variables are used (which means that if you let the simulator create the robot instance for you, it will appear at the default location specified in your class or in =Robot= (=[1,1]=)
 
@@ -183,11 +197,11 @@ I can't stress enough, however, that you *must* take care to keep the informatio
 
 * Exceptions
 
-Some methods raise exceptions when there is a problem so you can use Python's exception-handling facilities (e.g., =try= =... =except=) to catch errors in your code.  These exceptions are:
+Some methods raise exceptions when there is a problem so you can use Python's exception-handling facilities (e.g. =try...except=) to catch errors in your code.  These exceptions are:
 - =WorldException= -- a problem with something having to do with the world; includes subclasses:
   - =OutOfBounds= -- raised (e.g.) =add_object= when you try to put something outside of the world boundaries
   - =LocationOccupied=-- raised (e.g.) by =add_object= when you try to put something where there is something already
-- =DirectionError= -- raised (e.g.) by =next_location= if you give it a bad direction
+  - =DirectionError= -- raised (e.g.) by =next_location= if you give it a bad direction
 
 * Using the messaging methods
 
@@ -228,12 +242,17 @@ This way, from methods of =MyClass= can do:
 Something that is very useful is (Python 3 only) string interpolation, too, e.g.:
 : self.msg(f'The objects are {self.objects()}.')
 
+Instances of the =Simulator= and =World= classes both have =mh= instance variables.  When a simulator instance is created, it sets =mh= to be a new instance of =MessageHandler= and tells the world instance it creates to use the same =MessageHandler= instance as the value of its =mh=.  This means that if  set the verbosity of  the simulator, e.g.,
+: s.mh.set_verbosity('debugging')
+@@latex:\noindent@@ that the verbosity of the world instance will be changed, too.
+
 
 * Simulating your work
 
 The major function to use to run your simulation is just =run=.  (Original, no?)  This has two optional parameters:
 - =ticks= -- how many clock-ticks to run for
-- =show_each= -- show the state of the world after each clock tick
+- =show_each= -- draw the state of the world after each clock tick
+
 So if you want to run it for 10 seconds (if that's what you want  clock ticks to represent, and assuming =s= contains a =Simulator= instance):
 : s.run(ticks=10,show_each=True)
 
@@ -282,19 +301,18 @@ The =Object= class represents simulation objects, for example, obstacles.  Robot
 
 #+begin_src python +n -i :tangle yes :comments link
 class Object():
-    #+end_src
+#+end_src
 
 This initializes several instance variables based on the (optional, keyword) parameters to the instantiation function:
 
 #+begin_src python +n -i :tangle yes :comments link
-    def __init__(self,name=None,location=[1,1], orientation="north",icon='@'):
+    def __init__(self,name=None,location=[1,1], orientation="north",icon='@',mh=None):
         self.name = name if name else symbolGen.new_symbol("obj")
+        self.mh = MessageHandler() if mh is None else mh
         self.location = location
         self.orientation = orientation
         self.icon_char = icon
         self.world = None
-        self.mh = MessageHandler()
-
 #+end_src
 
 Along with the =mh= instance variable, these methods allow using the messaging functions by just using other methods of the object, e.g., =self.msg('hi')= passes calls the corresponding method of =MessageHandle=.
@@ -325,10 +343,8 @@ This lets =World='s =draw= method know what this object's icon should be.
 
 #+end_src
 
-** World class
-
-The =World= class holds a representation of the current state of the world.  Before defining those, though, we first define the exception classes used by the =World= when there are problems
-
+** Exceptions defined for errors in the world
+These are exceptions that =World= methods throw when there's an error:
 #+begin_src python +n -i :tangle yes :comments link
 class WorldException(Exception):
     pass
@@ -339,14 +355,11 @@ class LocationOccupied(WorldException):
 
 class DirectionError(WorldException):
     pass
-
-class OrientationError(WorldException):
-    pass
 #+end_src
 
+** World class
 
-
-Here is the class and its =__init__= method.  The world can be initialized with different sizes, numbers of obstacles automatically created in random locations, or obstacles placed at particular locations.  The class variables provide some default characters to use when drawing the world.  These can be overridden (see below).
+The =World= class holds a representation of the current state of the world. Here is the class and its =__init__= method.  The world can be initialized with different sizes, numbers of obstacles automatically created in random locations, or obstacles placed at particular locations.  The class variables provide some default characters to use when drawing the world.  These can be overridden (see below).
 
 #+begin_src python +n -i :tangle yes :comments link
 class World():
@@ -356,14 +369,17 @@ class World():
     directions = ['north', 'east', 'south', 'west']
 
     def __init__(self,size=[10,10],num_obstacles=0,
-                 obstacle_locations=None):
+                 obstacle_locations=None,mh=None):
         self.size = size
-        self.num_obstacles = num_obstacles
-        self.obstacle_locations = obstacle_locations
-
         self.objects = []
+        self.mh = MessageHandler() if mh is None else mh
 
-        self.mh = MessageHandler()
+        if obstacle_locations:
+            self.add_obstacles(obstacle_locations)
+        elif num_obstacles:
+            self.add_random_obstacles(number=num_obstacles)
+
+
 #+end_src
 
 Set up messaging methods.
@@ -426,7 +442,7 @@ Note that this adds (or at least, sets) the added object's =world= instance vari
         if type(object) == list or type(object) == tuple:
             object = Object(location=object)
 
-        self.vdmsg(f'(adding object {object.name} to world)')
+        self.vdmsg(f'(adding object {object.name} at {object.location})')
 
         object.world = self                  # so it can do its own percepts
 
@@ -436,7 +452,37 @@ Note that this adds (or at least, sets) the added object's =world= instance vari
             raise LocationOccupied
         else:
             self.objects.append(object)
+
+        return object
 #+end_src
+
+=add_random_obstacle= (=add_random_object=) add an object in a random, unoccupied location.
+
+#+begin_src python :tangle yes :comments link
+    def add_random_obstacle(self):
+        return self.add_random_object()
+
+    def add_random_object(self):
+        return self.add_object(self.empty_location())
+
+#+end_src
+
+Add multiple objects (obstacles) in random locations using these methods, which both do the same thing.  If no =number= is specified, this will generate a random number of objects between =min= and =max= (inclusive).
+
+#+begin_src python :tangle yes :comments link
+    def add_random_objects(self,number=None,max=20,min=1):
+        if number == None:
+            number = randint(min,max)
+        for i in range(number):
+            self.add_random_obstacle()
+
+    def add_random_obstacles(self,number=None,max=20,min=1):
+        return self.add_random_objects(number=number,max=max,min=min)
+    
+#+end_src
+
+
+
 
 This clears the world of obstacles.
 
@@ -498,6 +544,8 @@ Draw a simple depiction of the world.
         self.draw_line(self.top_bottom_char)
         self.draw_rows(self.empty_char,self.side_wall_char)
         self.draw_line(self.top_bottom_char)
+
+    world_sketch =draw  
         
     def draw_line(self,char):
         print((self.size[1]+2)*char)
@@ -560,7 +608,7 @@ These methods: find the next location in the given orientation; find the directi
         elif direction == 'west':
             return 'east'
         else:
-            raise OrientationError()
+            raise DirectionError()
 
     def clockwise_direction(self,direction):
         if direction == 'north':
@@ -598,9 +646,10 @@ This is the class that represents the simulator itself.  It creates and contain 
 class Simulator():
     def __init__(self,size=[10,10],num_obstacles=0,obstacle_locations=None):
         self.time = 0
-        self.world = World(size=size,num_obstacles=num_obstacles,
-                           obstacle_locations=obstacle_locations)
         self.mh = MessageHandler()
+        self.world = World(size=size,num_obstacles=num_obstacles,
+                           obstacle_locations=obstacle_locations,
+                           mh=self.mh)
 #+end_src
 
 Set up messaging methods for this object.
@@ -628,14 +677,9 @@ Clear the world (=clear=) or clear the world  and reset the timer (=reset=).
         self.time = 0
 #+end_src
 
-Methods for adding objects.  
-
-=add_obstacles= just calls =add_objects=, which calls =World='s =add_object= method for each object specified (see that method for details about object specification).  
-
-=add_random_obstacles= adds multiple obstacles in random locations.  You can specify the number to add, the maximum to add, and the minimum to add.  If you don't specify a number, this creates a random number (between the minimum and the maximum, inclusive) of obstacles.
+Methods for adding objects.  These are all just "pass-through" methods that end up calling the World's corresponding methods.  See the description of those above.
 
 #+begin_src python +n -i :tangle yes :comments link
-
     def add_obstacles(self,loc_list):
         return self.add_objects(loc_list)
 
@@ -648,22 +692,35 @@ Methods for adding objects.
         return self.world.add_object(loc_or_obj)
 
     def add_random_obstacles(self,number=None,max=20,min=1):
-        if number == None:
-            number = randint(min,max)
-        for i in range(number):
-            self.add_random_obstacle()
+        return self.world.add_random_obstacles(number=number,max=max, min=min)
+
+    def add_objects(self,loc_list):
+        return self.world.add_objects(loc_list)
 
     def add_random_obstacle(self):
-        self.world.add_object(self.world.empty_location())
+        return self.world.add_random_obstacle()
+#+end_src
 
+Add  a robot to the simulated world.  This has parameters:
+  - =robot= -- if this parameter is set, then the robot instance specified will be added to the world.  If =location= (or =orientation=) is set, then the robot's location (orientation) will be set to that value.
+  - =robot_type= (=type=) -- if =robot= is not set, then this defines the type of the robot instance to create.[fn:5]  The default is =Robot=. 
+  - =name= -- name to give the robot, if a new one is to be created.
+  - =location= -- location at which to add the robot; if =robot= is provided, then this sets its location.
+  - =orientation= -- orientation to which to point the robot; if =robot= is provided, then this sets its orientation.
+  - =mh= -- set the robot's message handler.
+
+#+begin_src python :tangle yes :comments link
     def add_robot(self,robot=None,name=None,location=None,orientation=None,
                   robot_type='Robot',
-                  type=None):
+                  type=None,mh=None):
         if type is not None:
             robot_type = type
         if location and not self.empty(location):
             self.msg(f"Can't add robot at {location}: not empty or out of bounds.")
-            return False
+            raise LocationOccupied       
+        if orientation and not orientation in self.world.directions:
+            self.msg(f"Can't orient robot to {location}: not defined.")            
+            raise DirectionError
         if robot is None:
             robot = eval(f'{robot_type}()')
             robot.location = location if location else self.world.empty_location()
@@ -674,6 +731,11 @@ Methods for adding objects.
             if orientation:
                 robot.orientation = orientation
 
+        if mh:
+            robot.mh = mh
+        if name:
+            robot.name = name
+            
         self.dmsg(f'Adding robot {robot.name} at {robot.location}, orientation {robot.orientation}')
         return self.add_object(robot)
 #+end_src
@@ -705,6 +767,9 @@ These are methods that just call their counterparts of =World=; see the descript
 
     def draw(self,empty_char='.',side_wall_char='+',top_bottom_char='+'):
         self.world.draw()
+
+    # make world_sketch an alias for draw:
+    world_sketch = draw
 #+end_src
 
 This runs the simulator.  By default, it runs for a single "clock tick" and does not draw the world.  You can set =ticks= to the number of ticks you would like it to run, and you can set =show_each= to =True= to have it draw the world after each clock tick.
@@ -762,8 +827,8 @@ You can specify the location, orientation, name, and the command and percepts th
 #+begin_src python +n -i :tangle yes :comments link
     def __init__(self,command_map=None,percept_map=None,
                  location=[1,1],orientation='north',
-                 name=None):
-        super().__init__(location=location, orientation=orientation)
+                 name=None,mh=None):
+        super().__init__(location=location, orientation=orientation,mh=mh)
         self.percept = None
         self.next_action = None
         self.prev_action = None
@@ -910,7 +975,7 @@ These are the methods that are called to accomplish the commands =agent_program=
             return False
         else:
             self.location = location
-            self.msg(f'{self.name} Moving to {location}.')
+            self.msg(f'{self.name}: Moving to {location}.')
             return True
 
     def do_turn_clockwise(self):
@@ -941,14 +1006,14 @@ Here is an example to help you figure out how to set up your agents.  This one i
 class RandomRobot(Robot):
     def __init__(self,command_map=None,percept_map=None,
                  location=[1,1],orientation='north',
-                 name=None):
+                 name=None,mh=None):
 #+end_src
 
 This calls the =Robot= class' =__init__= method to have it set up most of the robot for you.
 #+begin_src python +n -i :tangle yes :comments link
         super().__init__(command_map=command_map, percept_map=percept_map,
                                    location=location, orientation=orientation,
-                                   name=symbolGen.new_symbol('randrob'))
+                                   name=symbolGen.new_symbol('randrob'),mh=mh)
 
     #+end_src
     
@@ -970,6 +1035,9 @@ An example agent program.  It also shows how you can use the variable verbosity 
 * Vars                                                               :ignore:
 
 * Footnotes
+[fn:5] =type= is provided as a synonym for =robot_type= for backward compatibility.
+
+[fn:4]Note: the Lisp version used the parameter =type= instead of =robot_type=; this is still supported in this version.  
 [fn:3]Yes, I'm aware I could have just had a class variable for =delete_object= set to =remove_object=.  I just chose not to do it. 
 
 [fn:2]I know, this is a very verbose and redundant way to provide percepts (for example, no two bump sensors can be =t= at the same time, etc.), but it easy for you to use.   

@@ -13,13 +13,13 @@ class Object():
 # Object class: Simulated objects:1 ends here
 
 # [[file:py_simulator.org::*Object class: Simulated objects][Object class: Simulated objects:2]]
-    def __init__(self,name=None,location=[1,1], orientation="north",icon='@'):
+    def __init__(self,name=None,location=[1,1], orientation="north",icon='@',mh=None):
         self.name = name if name else symbolGen.new_symbol("obj")
+        self.mh = MessageHandler() if mh is None else mh
         self.location = location
         self.orientation = orientation
         self.icon_char = icon
         self.world = None
-        self.mh = MessageHandler()
 # Object class: Simulated objects:2 ends here
 
 # [[file:py_simulator.org::*Object class: Simulated objects][Object class: Simulated objects:3]]
@@ -43,7 +43,7 @@ class Object():
         return self.icon_char
 # Object class: Simulated objects:5 ends here
 
-# [[file:py_simulator.org::*World class][World class:1]]
+# [[file:py_simulator.org::*Exceptions defined for errors in the world][Exceptions defined for errors in the world:1]]
 class WorldException(Exception):
     pass
 class OutOfBounds(WorldException):
@@ -53,12 +53,9 @@ class LocationOccupied(WorldException):
 
 class DirectionError(WorldException):
     pass
+# Exceptions defined for errors in the world:1 ends here
 
-class OrientationError(WorldException):
-    pass
-# World class:1 ends here
-
-# [[file:py_simulator.org::*World class][World class:2]]
+# [[file:py_simulator.org::*World class][World class:1]]
 class World():
     empty_char='.'
     side_wall_char='+'
@@ -66,17 +63,18 @@ class World():
     directions = ['north', 'east', 'south', 'west']
 
     def __init__(self,size=[10,10],num_obstacles=0,
-                 obstacle_locations=None):
+                 obstacle_locations=None,mh=None):
         self.size = size
-        self.num_obstacles = num_obstacles
-        self.obstacle_locations = obstacle_locations
-
         self.objects = []
+        self.mh = MessageHandler() if mh is None else mh
 
-        self.mh = MessageHandler()
-# World class:2 ends here
+        if obstacle_locations:
+            self.add_obstacles(obstacle_locations)
+        elif num_obstacles:
+            self.add_random_obstacles(number=num_obstacles)
+# World class:1 ends here
 
-# [[file:py_simulator.org::*World class][World class:3]]
+# [[file:py_simulator.org::*World class][World class:2]]
     def msg(self,m):
         self.mh.msg(m)
     def dmsg(self,m):
@@ -85,9 +83,9 @@ class World():
         self.mh.vmsg(m)
     def vdmsg(self,m):
         self.mh.vdmsg(m)
-# World class:3 ends here
+# World class:2 ends here
 
-# [[file:py_simulator.org::*World class][World class:4]]
+# [[file:py_simulator.org::*World class][World class:3]]
     def set_drawing_character(self,empty=None,side_wall=None,
                               top_bottom=None):
         self.empty_char = empty if empty else World.empty_char
@@ -95,9 +93,9 @@ class World():
             else World.side_wall_char
         self.top_bottom_char = top_bottom if top_bottom else \
             World.top_bottom_char
-# World class:4 ends here
+# World class:3 ends here
 
-# [[file:py_simulator.org::*World class][World class:5]]
+# [[file:py_simulator.org::*World class][World class:4]]
     def empty(self,location):
         if not self.in_bounds(location):
             return False
@@ -106,21 +104,21 @@ class World():
                 if object.location == location:
                     return False
             return True
-# World class:5 ends here
+# World class:4 ends here
 
-# [[file:py_simulator.org::*World class][World class:6]]
+# [[file:py_simulator.org::*World class][World class:5]]
     def in_bounds(self,loc):
         (x,y) = loc
         (max_x,max_y) = self.size
         return False if x < 1 or y < 1 or x > max_x or y > max_y else True
-# World class:6 ends here
+# World class:5 ends here
 
-# [[file:py_simulator.org::*World class][World class:7]]
+# [[file:py_simulator.org::*World class][World class:6]]
     def add_object(self,object):
         if type(object) == list or type(object) == tuple:
             object = Object(location=object)
 
-        self.vdmsg(f'(adding object {object.name} to world)')
+        self.vdmsg(f'(adding object {object.name} at {object.location})')
 
         object.world = self                  # so it can do its own percepts
 
@@ -130,20 +128,41 @@ class World():
             raise LocationOccupied
         else:
             self.objects.append(object)
+
+        return object
+# World class:6 ends here
+
+# [[file:py_simulator.org::*World class][World class:7]]
+    def add_random_obstacle(self):
+        return self.add_random_object()
+
+    def add_random_object(self):
+        return self.add_object(self.empty_location())
 # World class:7 ends here
 
 # [[file:py_simulator.org::*World class][World class:8]]
-    def clear(self):
-        self.vdmsg('(clearing world)')
-        self.objects = []
+    def add_random_objects(self,number=None,max=20,min=1):
+        if number == None:
+            number = randint(min,max)
+        for i in range(number):
+            self.add_random_obstacle()
+
+    def add_random_obstacles(self,number=None,max=20,min=1):
+        return self.add_random_objects(number=number,max=max,min=min)
 # World class:8 ends here
 
 # [[file:py_simulator.org::*World class][World class:9]]
-    def object_locations(self):
-        return [obj.location for obj in self.objects]
+    def clear(self):
+        self.vdmsg('(clearing world)')
+        self.objects = []
 # World class:9 ends here
 
 # [[file:py_simulator.org::*World class][World class:10]]
+    def object_locations(self):
+        return [obj.location for obj in self.objects]
+# World class:10 ends here
+
+# [[file:py_simulator.org::*World class][World class:11]]
     def delete_object(self,object):
         return self.remove_object(object)
 
@@ -157,9 +176,9 @@ class World():
             self.objects = self.objects[0:i] + self.objects[i+1:]
             self.vdmsg(f'(remove_object: removed {object.name})')
             return object
-# World class:10 ends here
+# World class:11 ends here
 
-# [[file:py_simulator.org::*World class][World class:11]]
+# [[file:py_simulator.org::*World class][World class:12]]
     def find_object(self,description):
         if type(description) == list:
             return self.find_object_by_location(description)
@@ -174,13 +193,15 @@ class World():
             if loc == obj.location:
                 return obj
         return None
-# World class:11 ends here
+# World class:12 ends here
 
-# [[file:py_simulator.org::*World class][World class:12]]
+# [[file:py_simulator.org::*World class][World class:13]]
     def draw(self):
         self.draw_line(self.top_bottom_char)
         self.draw_rows(self.empty_char,self.side_wall_char)
         self.draw_line(self.top_bottom_char)
+
+    world_sketch =draw  
         
     def draw_line(self,char):
         print((self.size[1]+2)*char)
@@ -198,9 +219,9 @@ class World():
                 print(obj.icon(),end='')
             else:
                 print(empty,end='')
-# World class:12 ends here
+# World class:13 ends here
 
-# [[file:py_simulator.org::*World class][World class:13]]
+# [[file:py_simulator.org::*World class][World class:14]]
     # return empty location
     def empty_location(self):
         for i in range(self.size[0]*self.size[1]):
@@ -209,9 +230,9 @@ class World():
                 return loc
         self.dmsg('No empty squares found after row*column tries.')
         return None
-# World class:13 ends here
+# World class:14 ends here
 
-# [[file:py_simulator.org::*World class][World class:14]]
+# [[file:py_simulator.org::*World class][World class:15]]
     # Note: we're going w/ row,column rather than x,y now:
     def next_location(self,location,direction):
         if direction == 'north':
@@ -235,7 +256,7 @@ class World():
         elif direction == 'west':
             return 'east'
         else:
-            raise OrientationError()
+            raise DirectionError()
 
     def clockwise_direction(self,direction):
         if direction == 'north':
@@ -251,22 +272,23 @@ class World():
 
     def counterclockwise_direction(self,direction):
         return self.opposite_direction(self.clockwise_direction(direction))
-# World class:14 ends here
+# World class:15 ends here
 
-# [[file:py_simulator.org::*World class][World class:15]]
+# [[file:py_simulator.org::*World class][World class:16]]
     def set_drawing_character(self,empty=None,side_wall=None,
                               top_bottom=None):
         self.world(set_drawing_character(empty=empty,side_wall=side_wall,
                                          top_bottom=top_bottom))
-# World class:15 ends here
+# World class:16 ends here
 
 # [[file:py_simulator.org::*Simulator class][Simulator class:1]]
 class Simulator():
     def __init__(self,size=[10,10],num_obstacles=0,obstacle_locations=None):
         self.time = 0
-        self.world = World(size=size,num_obstacles=num_obstacles,
-                           obstacle_locations=obstacle_locations)
         self.mh = MessageHandler()
+        self.world = World(size=size,num_obstacles=num_obstacles,
+                           obstacle_locations=obstacle_locations,
+                           mh=self.mh)
 # Simulator class:1 ends here
 
 # [[file:py_simulator.org::*Simulator class][Simulator class:2]]
@@ -303,22 +325,27 @@ class Simulator():
         return self.world.add_object(loc_or_obj)
 
     def add_random_obstacles(self,number=None,max=20,min=1):
-        if number == None:
-            number = randint(min,max)
-        for i in range(number):
-            self.add_random_obstacle()
+        return self.world.add_random_obstacles(number=number,max=max, min=min)
+
+    def add_objects(self,loc_list):
+        return self.world.add_objects(loc_list)
 
     def add_random_obstacle(self):
-        self.world.add_object(self.world.empty_location())
+        return self.world.add_random_obstacle()
+# Simulator class:4 ends here
 
+# [[file:py_simulator.org::*Simulator class][Simulator class:5]]
     def add_robot(self,robot=None,name=None,location=None,orientation=None,
                   robot_type='Robot',
-                  type=None):
+                  type=None,mh=None):
         if type is not None:
             robot_type = type
         if location and not self.empty(location):
             self.msg(f"Can't add robot at {location}: not empty or out of bounds.")
-            return False
+            raise LocationOccupied       
+        if orientation and not orientation in self.world.directions:
+            self.msg(f"Can't orient robot to {location}: not defined.")            
+            raise DirectionError
         if robot is None:
             robot = eval(f'{robot_type}()')
             robot.location = location if location else self.world.empty_location()
@@ -329,11 +356,16 @@ class Simulator():
             if orientation:
                 robot.orientation = orientation
 
+        if mh:
+            robot.mh = mh
+        if name:
+            robot.name = name
+            
         self.dmsg(f'Adding robot {robot.name} at {robot.location}, orientation {robot.orientation}')
         return self.add_object(robot)
-# Simulator class:4 ends here
+# Simulator class:5 ends here
 
-# [[file:py_simulator.org::*Simulator class][Simulator class:5]]
+# [[file:py_simulator.org::*Simulator class][Simulator class:6]]
     def empty(self,location):
         return self.world.empty(location)
 
@@ -358,24 +390,27 @@ class Simulator():
 
     def draw(self,empty_char='.',side_wall_char='+',top_bottom_char='+'):
         self.world.draw()
-# Simulator class:5 ends here
 
-# [[file:py_simulator.org::*Simulator class][Simulator class:6]]
+    # make world_sketch an alias for draw:
+    world_sketch = draw
+# Simulator class:6 ends here
+
+# [[file:py_simulator.org::*Simulator class][Simulator class:7]]
     def run(self,ticks=1,show_each=False):
         self.msg(f'Running for {ticks} ticks.')
         for i in range(ticks):
             self.clock_tick()
             if show_each:
                 self.draw()
-# Simulator class:6 ends here
+# Simulator class:7 ends here
 
-# [[file:py_simulator.org::*Simulator class][Simulator class:7]]
+# [[file:py_simulator.org::*Simulator class][Simulator class:8]]
     def clock_tick(self):
         self.dmsg('.')
         for object in self.world.objects:
             object.clock_tick()
         self.time += 1
-# Simulator class:7 ends here
+# Simulator class:8 ends here
 
 # [[file:py_simulator.org::*Robot class][Robot class:1]]
 class Robot(Object):
@@ -400,8 +435,8 @@ class Robot(Object):
 # [[file:py_simulator.org::*Robot class][Robot class:3]]
     def __init__(self,command_map=None,percept_map=None,
                  location=[1,1],orientation='north',
-                 name=None):
-        super().__init__(location=location, orientation=orientation)
+                 name=None,mh=None):
+        super().__init__(location=location, orientation=orientation,mh=mh)
         self.percept = None
         self.next_action = None
         self.prev_action = None
@@ -527,7 +562,7 @@ class Robot(Object):
             return False
         else:
             self.location = location
-            self.msg(f'{self.name} Moving to {location}.')
+            self.msg(f'{self.name}: Moving to {location}.')
             return True
 
     def do_turn_clockwise(self):
@@ -550,13 +585,13 @@ def create_simulator(size=[10,10],num_obstacles=0,obstacle_locations=None):
 class RandomRobot(Robot):
     def __init__(self,command_map=None,percept_map=None,
                  location=[1,1],orientation='north',
-                 name=None):
+                 name=None,mh=None):
 # Example: =RandomRobot=:1 ends here
 
 # [[file:py_simulator.org::*Example: =RandomRobot=][Example: =RandomRobot=:2]]
         super().__init__(command_map=command_map, percept_map=percept_map,
                                    location=location, orientation=orientation,
-                                   name=symbolGen.new_symbol('randrob'))
+                                   name=symbolGen.new_symbol('randrob'),mh=mh)
 # Example: =RandomRobot=:2 ends here
 
 # [[file:py_simulator.org::*Example: =RandomRobot=][Example: =RandomRobot=:3]]
