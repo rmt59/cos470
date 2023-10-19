@@ -144,6 +144,16 @@ If this happens, after you load the file you can use =shadowing-import= to get a
 
 Set up the package for the messages:
 
+This will get rid of the warnings and style warnings from this file and the others it loads.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+#+end_src
+
+
+
 #+begin_src lisp +n -i :tangle yes :comments link
 (unless (find-package "MSG")
   (defpackage "MESSAGE"
@@ -400,6 +410,14 @@ Now, set up a message handler.  Note that every time you reload this file, a new
 #+begin_src lisp +n -i :tangle yes :comments link
 (defparameter *message-handler* (make-instance 'message-handler))
 #+end_src
+
+Finally, restore the warnings and style warnings:
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
+#+end_src
+
 
 * Footnotes
 

@@ -1,5 +1,10 @@
 (in-package cl-user)
 
+;; get rid of warnings and style warnings:
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+
 (defclass priority-queue ()
   ((queue :initform nil)
    (compare-function :initarg :compare-function
@@ -47,13 +52,17 @@
 (defmethod cmp-nodes ((node1 sample-node) (node2 sample-node))
   (< (cost node1) (cost node2)))
 
-(setq *sample* (make-instance 'priority-queue :compare-function #'cmp-nodes))
+(defun create-sample-pqueue ()
+  (setq *sample* (make-instance 'priority-queue :compare-function #'cmp-nodes))
+  (loop for i from 1 to 10 
+	do (enqueue *sample* (make-instance 'sample-node :cost (random 100) :coord (list i i)))
+	   (with-slots (queue) *sample*
+	     (format t "Added ~s, queue contains:  " (list i i))
+	     (print-queue *sample*))))
 
-(loop for i from 1 to 10 
-    do (enqueue *sample* (make-instance 'sample-node :cost (random 100) :coord (list i i)))
-       (with-slots (queue) *sample*
-	 (format t "Added ~s, queue contains:  " (list i i))
-	 (print-queue *sample*)))
-
+;; Restore warnings and style warnings:
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
 
 

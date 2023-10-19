@@ -4,9 +4,9 @@
 #+OPTIONS: toc:t num:t H:3
 #+LATEX_CLASS: tufte-handout
 #+LATEX_CLASS_OPTIONS: [11pt]
-#+LATEX_HEADER: \usepackage{tufte-textbook}
+# #+LATEX_HEADER: \usepackage{tufte-textbook}
 # Define subtitle after, since the new \subtitle macro is in the textbook.sty file:
-#+LATEX_HEADER: \subtitle{(new-symbol.lisp)}
+# #+LATEX_HEADER: \subtitle{(new-symbol.lisp)}
 # +LATEX_HEADER: \makeindex
 # +LATEX_HEADER: \asPublished
 # +LATEXT_HEADER: \hideSources
@@ -48,6 +48,26 @@ The simulator is in its own package, =simulator=, which has the nickname =sim=. 
 : (import '(sim:create-simulator sim:run))
 @@latex:\noindent@@ or import /all/ exported symbols from the package:[fn:1]
 : (use-package 'sim)
+
+*NOTE:* Loading the simulator /also/ loads the files =messages.lisp and =new-symbol.lisp=.  You do not need to load them yourself.  It does /not/, however, import the symbols (functions, methods, etc.) into the =CL-USER= package the REPL starts in.  To do that, you would need to do, in the REPL or your own files:
+: (use-package 'sym)   ;; for the new-symbols file
+: (use-package 'message) ;; for the messages file
+
+*NOTE:* As of 2023-10-19, the simulator and associated files no longer spit out the annoying warnings that they did previously. If you want to get rid of similar warnings and style warnings from your own code, you can put the following at the top of your file(s):
+#+begin_src lisp
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+#+end_src
+\noindent
+and then put this at the bottom to turn them back on after loading:
+#+begin_src lisp
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
+#+end_src
+
+
 
 ** If you get an error about package/symbol problems
 
@@ -360,6 +380,16 @@ And here are some =world= methods you may find useful; the following assumes =w=
 In the code below, 
 I have split up the action of exporting symbols so that you can better see which ones are available to you to import; look for lines that look like:
 : (export ...)
+
+** Muffle warnings and style-warnings
+This will get rid of the warnings and style warnings from this file and the others it loads.
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+#+end_src
+
 
 ** Package setup
 
@@ -988,6 +1018,13 @@ Here are the supplied =take-action= methods:
       (dfmsg "[~s: percept = ~s]" name percept) 
       (dfmsg "[~s: choosing ~s as next action]" name next-action)
       next-action)))
+#+end_src
+
+** Restore the warnings and style warnings:
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
 #+end_src
 
 

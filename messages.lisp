@@ -1,4 +1,10 @@
-; [[file:messages.org::*Code][Code:1]]
+;; [[file:messages.org::*Code][Code:1]]
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+;; Code:1 ends here
+
+;; [[file:messages.org::*Code][Code:2]]
 (unless (find-package "MSG")
   (defpackage "MESSAGE"
     (:use "COMMON-LISP")
@@ -6,9 +12,9 @@
     )
 
 (in-package msg)
-; Code:1 ends here
+;; Code:2 ends here
 
-; [[file:messages.org::*Code][Code:2]]
+;; [[file:messages.org::*Code][Code:3]]
 (defmacro string-append (&rest l)
     `(concatenate 'string ,@l))
 
@@ -101,9 +107,9 @@
 
 (defmacro set-indentation-delta (num)
   `(setf (slot-value *message-handler* 'indentation-delta) ,num))
-; Code:2 ends here
+;; Code:3 ends here
 
-; [[file:messages.org::*Code][Code:3]]
+;; [[file:messages.org::*Code][Code:4]]
 (defmacro with-indentation (&rest l)
   `(progn 
      (indent) 
@@ -126,9 +132,9 @@
      (unwind-protect 
        (progn ,@l)
      (pop-destination *message-handler*))))
-; Code:3 ends here
+;; Code:4 ends here
 
-; [[file:messages.org::*Code][Code:4]]
+;; [[file:messages.org::*Code][Code:5]]
 (defclass message-handler ()
   (
    (destination :initform *standard-output* :initarg :destination)
@@ -140,9 +146,9 @@
    (destination-stack :initform nil)
    )
   )
-; Code:4 ends here
+;; Code:5 ends here
 
-; [[file:messages.org::*Code][Code:5]]
+;; [[file:messages.org::*Code][Code:6]]
 (defmethod push-indentation ((self message-handler))
   (with-slots (indentation indentation-stack indentation-delta) self
     (push indentation indentation-stack)
@@ -160,17 +166,17 @@
 (defmethod pop-destination ((self message-handler))
   (with-slots (destination destination-stack) self
     (setq destination (or (pop destination-stack) *standard-output*))))
-; Code:5 ends here
+;; Code:6 ends here
 
-; [[file:messages.org::*Code][Code:6]]
+;; [[file:messages.org::*Code][Code:7]]
 (defmethod formatted-message ((self message-handler) format-string &rest args)
   (with-slots (destination) self
       (apply #'format
 	     (cons destination 
 		   (cons (prepare-string self format-string) args)))))
-; Code:6 ends here
+;; Code:7 ends here
 
-; [[file:messages.org::*Code][Code:7]]
+;; [[file:messages.org::*Code][Code:8]]
 (defmethod prepare-string ((self message-handler) string) 
   (indent-string self (add-line-break-or-not self string)))
 
@@ -188,18 +194,18 @@
     (if (not fmsg-inserts-line-breaks)
       string
       (string-append string "~&"))))
-; Code:7 ends here
+;; Code:8 ends here
 
-; [[file:messages.org::*Code][Code:8]]
+;; [[file:messages.org::*Code][Code:9]]
 (defmethod unformatted-message ((self message-handler) &rest args)
   (with-slots (destination) self
     (dolist (arg (cons (indentation-string self) args))
       (if (eql 't arg)
 	(fresh-line destination)
 	(write arg :stream destination :escape nil)))))
-; Code:8 ends here
+;; Code:9 ends here
 
-; [[file:messages.org::*Code][Code:9]]
+;; [[file:messages.org::*Code][Code:10]]
 (export '(msg
 	  dmsg
 	  vmsg
@@ -229,8 +235,14 @@
 	  verbose-debugging-messages
 	  all-messages
 	  ))
-; Code:9 ends here
+;; Code:10 ends here
 
-; [[file:messages.org::*Code][Code:10]]
+;; [[file:messages.org::*Code][Code:11]]
 (defparameter *message-handler* (make-instance 'message-handler))
-; Code:10 ends here
+;; Code:11 ends here
+
+;; [[file:messages.org::*Code][Code:12]]
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
+;; Code:12 ends here

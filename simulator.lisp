@@ -1,3 +1,9 @@
+;; [[file:simulator.org::*Muffle warnings and style-warnings][Muffle warnings and style-warnings:1]]
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+;; Muffle warnings and style-warnings:1 ends here
+
 ;; [[file:simulator.org::*Package setup][Package setup:1]]
 (unless (find-package "SIM")
   (defpackage "SIMULATOR"
@@ -579,3 +585,9 @@
       (dfmsg "[~s: choosing ~s as next action]" name next-action)
       next-action)))
 ;; Example: =random-robot=:1 ends here
+
+;; [[file:simulator.org::*Restore the warnings and style warnings:][Restore the warnings and style warnings::1]]
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
+;; Restore the warnings and style warnings::1 ends here

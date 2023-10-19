@@ -66,7 +66,17 @@ after which you can just do:
 
 * Code
 
-First, define the package and change to that package for the rest of the file:
+First, get rid of unnecessary warnings and style warnings:
+
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:muffle-conditions warning))
+  (declaim (sb-ext:muffle-conditions style-warning)))
+#+end_src
+
+
+
+Now define the package and change to that package for the rest of the file:
 
 #+begin_src lisp +n -i :tangle yes :comments link
 (unless (find-package "SYM")
@@ -144,6 +154,14 @@ but I thought the difference from a normal function call might be more confusing
 (defmacro new-symbol (&optional prefix)
   `(make-new-symbol *symbol-generator* ,prefix))
 #+end_src
+
+Now restore the warnings and style warnings:
+#+begin_src lisp +n -i :tangle yes :comments link
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (declaim (sb-ext:unmuffle-conditions warning))
+  (declaim (sb-ext:unmuffle-conditions style-warning)))
+#+end_src
+
 
 That's all, folks.
 
