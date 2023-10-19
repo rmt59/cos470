@@ -1,0 +1,24 @@
+\contentsline {section}{Description}{1}{section*.1}%
+\contentsline {section}{Loading the simulator}{1}{section*.2}%
+\contentsline {subsection}{If you get an error about package/symbol problems}{2}{subsection*.3}%
+\contentsline {section}{Creating a simulator}{3}{section*.4}%
+\contentsline {section}{Creating a new robot type}{3}{section*.5}%
+\contentsline {subsection}{Percept format}{4}{subsection*.6}%
+\contentsline {subsection}{Adding new percept components}{6}{subsection*.7}%
+\contentsline {subsection}{Adding new actions}{7}{subsection*.8}%
+\contentsline {section}{Adding your robot to the simulator}{7}{section*.9}%
+\contentsline {section}{Changing the world}{7}{section*.10}%
+\contentsline {section}{Simulating your work}{8}{section*.11}%
+\contentsline {section}{Miscellaneous methods}{11}{section*.12}%
+\contentsline {section}{Code}{12}{section*.13}%
+\contentsline {subsection}{Muffle warnings and style-warnings}{12}{subsection*.14}%
+\contentsline {subsection}{Package setup}{12}{subsection*.15}%
+\contentsline {subsection}{Global variables}{13}{subsection*.16}%
+\contentsline {subsection}{Classes}{13}{subsection*.17}%
+\contentsline {subsection}{Simulator methods}{15}{subsection*.18}%
+\contentsline {subsection}{World methods}{23}{subsection*.19}%
+\contentsline {subsection}{Object methods}{25}{subsection*.20}%
+\contentsline {subsection}{Robot methods}{26}{subsection*.21}%
+\contentsline {subsection}{Example: \texttt {random-robot}}{26}{subsection*.22}%
+\contentsline {subsection}{Restore the warnings and style warnings:}{26}{subsection*.23}%
+\contentsfinish 
